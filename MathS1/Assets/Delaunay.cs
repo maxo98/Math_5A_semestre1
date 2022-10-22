@@ -7,6 +7,7 @@ public class Delaunay : MonoBehaviour
 {
 
     public MeshFilter meshFilter;
+    public MeshRenderer meshRenderer;
     public Transform meshTransform;
 
     public Transform cube;
@@ -16,10 +17,15 @@ public class Delaunay : MonoBehaviour
     public Transform p2;
     public Transform p3;
 
+    public bool voronoi;
+
+    public Material voronoiMat;
+
     // Start is called before the first frame update
     void Start()
     {
         DelaunayTriangulation();
+        if(voronoi == true) VoronoiFromDelaunay();
     }
 
     // Update is called once per frame
@@ -60,7 +66,7 @@ public class Delaunay : MonoBehaviour
                     //Check that it's not a point of the current triangle
                     if(vertices[triangles[i]] != vertices[cpt] && vertices[triangles[i+1]] != vertices[cpt] && vertices[triangles[i+2]] != vertices[cpt])
                     {
-                        Debug.Log("Found 1");
+                        //Debug.Log("Found 1");
                         found = true;
                     }else{
                         cpt++;
@@ -93,8 +99,8 @@ public class Delaunay : MonoBehaviour
 
                             for(int i4 = 0; i4 < 3 && found2 == false; i4++)
                             {
-                                Debug.Log(i + " " + triangleIndex);
-                                Debug.Log(i + " " + triangleIndex + " " + triangles[i + i3] + " " + triangles[triangleIndex + i4]);
+                                //Debug.Log(i + " " + triangleIndex);
+                                //Debug.Log(i + " " + triangleIndex + " " + triangles[i + i3] + " " + triangles[triangleIndex + i4]);
 
                                 if(triangles[i + i3] == triangles[triangleIndex + i4])
                                 {
@@ -119,7 +125,7 @@ public class Delaunay : MonoBehaviour
                         //If the triangles do have a common egde
                         if(p2 != -1)
                         {
-                            Debug.Log("Found 2");
+                            //Debug.Log("Found 2");
 
                             //Search for isolated point of triangle B
                             int pB3 = -1;
@@ -135,7 +141,7 @@ public class Delaunay : MonoBehaviour
                                 }
                             }
 
-                            Debug.Log("result " + p1 + " " + p2 + " " + pA3 + " " + pB3);
+                            //Debug.Log("result " + p1 + " " + p2 + " " + pA3 + " " + pB3);
 
                             //Do the backflip !
                             triangles[i] = pA3;
@@ -160,28 +166,143 @@ public class Delaunay : MonoBehaviour
         meshFilter.mesh.triangles = triangles;
     }
 
-    bool FindEdge((int, int) edge, in int[] triangles, out int i)
+    void VoronoiFromDelaunay()
     {
-        i = 0;
-        bool found = false;
+        List<int> temp = new List<int>(meshFilter.mesh.triangles);
+        temp.RemoveRange(meshFilter.mesh.triangles.Length/2, meshFilter.mesh.triangles.Length/2);
+        int[] triangles = temp.ToArray();
+        Vector3[] vertices = meshFilter.mesh.vertices;
 
-        while(i < triangles.Length && found == false)
+        List<Vector3> lineVertices = new List<Vector3>();
+        List<int> lineIndices = new List<int>();
+
+        for(int i = 0; i < triangles.Length; i+=3)
+        {
+            Vector3 center = GetCircleCenter(vertices[triangles[i]], vertices[triangles[i+1]], vertices[triangles[i+2]]);
+            center.z = vertices[triangles[i]].z;
+            
+            int centerIndex = lineVertices.Count;
+            lineVertices.Add(center);
+
+            List<Vector3> triangle = new List<Vector3>();
+            triangle.Add(vertices[triangles[i]]);
+            triangle.Add(vertices[triangles[i+1]]);
+            triangle.Add(vertices[triangles[i+2]]);
+
+            AddVoronoiLine(ref lineVertices, ref lineIndices, vertices[triangles[i]], vertices[triangles[i+1]], centerIndex);
+
+            VoronoiFlip(center, triangle, 0, 1, ref lineIndices, ref lineVertices);
+
+            AddVoronoiLine(ref lineVertices, ref lineIndices, vertices[triangles[i+1]], vertices[triangles[i+2]], centerIndex);
+
+            VoronoiFlip(center, triangle, 1, 2, ref lineIndices, ref lineVertices);
+
+            AddVoronoiLine(ref lineVertices, ref lineIndices, vertices[triangles[i]], vertices[triangles[i+2]], centerIndex);
+
+            VoronoiFlip(center, triangle, 2, 0, ref lineIndices, ref lineVertices);
+        }
+
+        meshFilter.mesh.Clear();
+        meshFilter.mesh.SetVertices(lineVertices);
+        meshFilter.mesh.SetIndices(lineIndices, MeshTopology.Lines, 0);
+
+        meshRenderer.material = voronoiMat;
+    }
+
+    void AddVoronoiLine(ref List<Vector3> lineVertices, ref List<int> lineIndices, in Vector3 vertA, in Vector3 vertB, int centerIndex)
+    {
+        Vector3 lineMiddle = (vertA + vertB);
+        lineMiddle.x /= 2;
+        lineMiddle.y /= 2;
+        lineMiddle.z = vertA.z;
+
+        int lineIndex = lineVertices.FindIndex(0, lineVertices.Count-1, d => d == lineMiddle);
+
+        if(lineIndex == -1)
+        {
+            lineIndex = lineVertices.Count;
+            lineVertices.Add(lineMiddle);
+        }
+
+        lineIndices.Add(centerIndex);
+        lineIndices.Add(lineIndex);
+    }
+
+    //Returns the number of time the edge appears in the mesh
+    int FindEdge((int, int) edge, in int[] triangles)
+    {
+        int i = 0;
+        int found = 0;
+
+        while(i < triangles.Length)
         {
             if((triangles[i], triangles[i+1]) == edge || (triangles[i+1], triangles[i]) == edge)
             {
-                found = true;
+                found++;
             }else if((triangles[i+1], triangles[i+2]) == edge || (triangles[i+2], triangles[i+1]) == edge)
             {
-                found = true;
+                found++;
             }else if((triangles[i], triangles[i+2]) == edge || (triangles[i+2], triangles[i]) == edge)
             {
-                found = true;
-            }else{
-                i+=3;
+                found++;
             }
+                
+            i+=3;
         }
 
         return found;
+    }
+
+    void VoronoiFlip(in Vector3 center, in List<Vector3> triangle, int a, int b, ref List<int> lineIndices, ref List<Vector3> lineVertices)
+    {
+        //Debug.Log(IsInsideTriangle(vertices[triangles[i]], vertices[triangles[i+1]], vertices[triangles[i+2]], center));
+        Vector3 lineMiddle = (center + lineVertices[lineIndices[lineIndices.Count-1]]);
+        lineMiddle.x /= 2;
+        lineMiddle.y /= 2;
+        lineMiddle.z = center.z;
+
+        //if(IsInsideTriangle(vertices[triangles[i]], vertices[triangles[i+1]], vertices[triangles[i+2]], lineMiddle) == false)
+        bool clockwise = isClockwise(triangle);
+        int orientation = Orientation(triangle[a], triangle[b], center);
+
+        if((clockwise == true && orientation == 1) || (clockwise == false && orientation == 2))
+        {
+            lineVertices.Add((center - lineVertices[lineVertices.Count-1]) + center);
+            lineIndices[lineIndices.Count-1] = lineVertices.Count - 1;
+        }
+    }
+
+    static public bool isClockwise(in List<Vector3> polygon)
+    {
+        float sum = 0;
+
+        for(int i = 0; i < polygon.Count; i++)
+        {
+            Vector3 nextVec = (i+1) < polygon.Count ? polygon[i+1] : polygon[0];
+
+            sum += (nextVec.x - polygon[i].x) * (nextVec.y + polygon[i].y);
+        }
+
+        //Clockwise if sum > 0
+        //CounterClockwise if sum < 0
+        return (sum > 0);
+    }
+
+    // 0 --> a, b and c are colinear
+    // 1 --> c is on the right
+    // 2 --> c is on the left
+    static public byte Orientation(Vector3 a, Vector3 b, Vector3 c)
+    {
+        double ABx = b.x - a.x;
+        double ABy = b.y - a.y;
+
+        double ACx = c.x - a.x;
+        double ACy = c.y - a.y;
+
+        double val = ACx * ABy - ACy * ABx;
+
+        if (val == 0) return 0; // collinéire 
+        return (byte)((val < 0) ? 1 : 2); // sens horaire ou sens anti-hoaraire
     }
 
     Vector3 GetCircleCenter(Vector3 p1, Vector3 p2, Vector3 p3)
@@ -211,14 +332,6 @@ public class Delaunay : MonoBehaviour
         pos.x = -((sx13) * (y12) + (sy13) * (y12) + (sx21) * (y13) + (sy21) * (y13)) / (2 * ((x31) * (y12) - (x21) * (y13)));
 
         return pos;
-    }
-
-    public void DoubleFaceVertices(ref Vector3[] vertices)
-    {
-        int verticesLength = vertices.Length;
-
-        Array.Resize(ref vertices, vertices.Length*2);
-        Array.Copy(vertices, 0, vertices, verticesLength, verticesLength);
     }
 
     public void DoubleFaceIndices(ref int[] indices)
