@@ -208,7 +208,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   meshFilter: {fileID: 447791656}
   meshRenderer: {fileID: 447791658}
-  meshTransform: {fileID: 0}
+  meshTransform: {fileID: 447791659}
   cube: {fileID: 0}
   i: 0
   p1: {fileID: 0}
@@ -216,9 +216,15 @@ MonoBehaviour:
   p3: {fileID: 0}
   voronoi: 1
   voronoiMat: {fileID: 2100000, guid: 6c04760b593f70e44ab948bbb0746fb4, type: 2}
+  point: {fileID: 3562025826810839118, guid: a782c0750bb57ac4382a3221e0ad02b6, type: 3}
 --- !u!23 &447791658 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: ed99386c161170c4e8163ef68075b4d3, type: 3}
+  m_PrefabInstance: {fileID: 447791654}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &447791659 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ed99386c161170c4e8163ef68075b4d3, type: 3}
   m_PrefabInstance: {fileID: 447791654}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &514373669
@@ -314,6 +320,7 @@ MonoBehaviour:
   p3: {fileID: 0}
   voronoi: 0
   voronoiMat: {fileID: 0}
+  point: {fileID: 0}
 --- !u!1 &525177682
 GameObject:
   m_ObjectHideFlags: 0

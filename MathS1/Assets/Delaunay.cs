@@ -10,16 +10,11 @@ public class Delaunay : MonoBehaviour
     public MeshRenderer meshRenderer;
     public Transform meshTransform;
 
-    public Transform cube;
-    public int i;
-
-    public Transform p1;
-    public Transform p2;
-    public Transform p3;
-
     public bool voronoi;
 
     public Material voronoiMat;
+
+    public GameObject point;
 
     // Start is called before the first frame update
     void Start()
@@ -168,6 +163,10 @@ public class Delaunay : MonoBehaviour
 
     void VoronoiFromDelaunay()
     {
+        foreach (Transform child in meshTransform.transform) {
+            GameObject.Destroy(child.gameObject);
+        }
+
         List<int> temp = new List<int>(meshFilter.mesh.triangles);
         temp.RemoveRange(meshFilter.mesh.triangles.Length/2, meshFilter.mesh.triangles.Length/2);
         int[] triangles = temp.ToArray();
@@ -175,7 +174,7 @@ public class Delaunay : MonoBehaviour
 
         List<Vector3> lineVertices = new List<Vector3>();
         List<int> lineIndices = new List<int>();
-
+        
         for(int i = 0; i < triangles.Length; i+=3)
         {
             Vector3 center = GetCircleCenter(vertices[triangles[i]], vertices[triangles[i+1]], vertices[triangles[i+2]]);
@@ -202,9 +201,24 @@ public class Delaunay : MonoBehaviour
             VoronoiFlip(center, triangle, 2, 0, ref lineIndices, ref lineVertices);
         }
 
+        int offset = lineVertices.Count;
+
+        lineVertices.InsertRange(lineVertices.Count, vertices);
+
+        List<int> cellCoreIndices = new List<int>();
+
+        for(int i = 0; i < vertices.Length; i++)
+        {
+            Instantiate(point, meshTransform.TransformPoint(vertices[i]), new Quaternion(), meshTransform);
+
+            cellCoreIndices.Add(offset + i);
+        }
+
         meshFilter.mesh.Clear();
+        meshFilter.mesh.subMeshCount = 2;
         meshFilter.mesh.SetVertices(lineVertices);
         meshFilter.mesh.SetIndices(lineIndices, MeshTopology.Lines, 0);
+        meshFilter.mesh.SetIndices(cellCoreIndices, MeshTopology.Points, 1);
 
         meshRenderer.material = voronoiMat;
     }
