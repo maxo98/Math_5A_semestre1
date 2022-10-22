@@ -60,6 +60,7 @@ public class Delaunay : MonoBehaviour
                     //Check that it's not a point of the current triangle
                     if(vertices[triangles[i]] != vertices[cpt] && vertices[triangles[i+1]] != vertices[cpt] && vertices[triangles[i+2]] != vertices[cpt])
                     {
+                        Debug.Log("Found 1");
                         found = true;
                     }else{
                         cpt++;
@@ -72,8 +73,10 @@ public class Delaunay : MonoBehaviour
             //If we need to flip it
             if(found == true)
             {
+                bool reset = false;
+
                 //Search to which triangle the vertex belongs
-                for(int i2 = 0; i2 < triangles.Length; i2++)
+                for(int i2 = i; i2 < triangles.Length && reset == false; i2++)
                 {
                     if(triangles[i2] == cpt)
                     {
@@ -90,7 +93,9 @@ public class Delaunay : MonoBehaviour
 
                             for(int i4 = 0; i4 < 3 && found2 == false; i4++)
                             {
-                                
+                                Debug.Log(i + " " + triangleIndex);
+                                Debug.Log(i + " " + triangleIndex + " " + triangles[i + i3] + " " + triangles[triangleIndex + i4]);
+
                                 if(triangles[i + i3] == triangles[triangleIndex + i4])
                                 {
                                     if(p1 == -1)
@@ -114,6 +119,8 @@ public class Delaunay : MonoBehaviour
                         //If the triangles do have a common egde
                         if(p2 != -1)
                         {
+                            Debug.Log("Found 2");
+
                             //Search for isolated point of triangle B
                             int pB3 = -1;
                             bool found2 = false;
@@ -128,17 +135,20 @@ public class Delaunay : MonoBehaviour
                                 }
                             }
 
+                            Debug.Log("result " + p1 + " " + p2 + " " + pA3 + " " + pB3);
+
                             //Do the backflip !
                             triangles[i] = pA3;
                             triangles[i+1] = pB3;
                             triangles[i+2] = p1;
 
-                            triangles[triangleIndex] = pA3;
-                            triangles[triangleIndex+1] = pB3;
-                            triangles[triangleIndex+2] = p2;
+                            triangles[triangleIndex] = p2;
+                            triangles[triangleIndex+1] = pA3;
+                            triangles[triangleIndex+2] = pB3;
 
                             //Start the search again
-                            i = 0;
+                            reset = true;
+                            i = -3;
                         }
                     }
                 }
