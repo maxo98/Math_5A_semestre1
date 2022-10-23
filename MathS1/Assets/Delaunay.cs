@@ -376,6 +376,9 @@ public class Delaunay : MonoBehaviour
                     Vector3 collision = Vector3.zero;
                     float sqrDist = 0;
 
+                    //Elongate outside edge
+                    lineVertices[lineIndices[i+1]] += (lineVertices[lineIndices[i+1]] - lineVertices[lineIndices[i]]) * 1000;
+
                     for(int cpt = 0; cpt < lineIndices.Count; cpt+=2)
                     {
                         if(outsideSeg.Contains((lineIndices[cpt], lineIndices[cpt+1])) == false && cpt != i)
@@ -408,9 +411,6 @@ public class Delaunay : MonoBehaviour
                     {
                         //segToSegTri.Remove((lineIndices[i2-1], lineIndices[i2]));
                         lineIndices.RemoveRange(i, 2);
-                    }else{//Elongate outside edge
-
-                        lineVertices[lineIndices[i+1]] += (lineVertices[lineIndices[i+1]] - lineVertices[lineIndices[i]]) * 100;
                     }
 
                     found = true;
@@ -502,7 +502,7 @@ public class Delaunay : MonoBehaviour
 
         if((clockwise == true && orientation == 1) || (clockwise == false && orientation == 2))
         {
-            lineVertices.Add((center - lineVertices[lineVertices.Count-1]) * 500 + center);
+            lineVertices.Add((center - lineVertices[lineVertices.Count-1]) + center);
             lineIndices[lineIndices.Count-1] = lineVertices.Count - 1;
 
             return true;
