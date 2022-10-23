@@ -5,7 +5,6 @@ using System;
 
 public class Delaunay : MonoBehaviour
 {
-
     public MeshFilter meshFilter;
     public MeshRenderer meshRenderer;
     public Transform meshTransform;
@@ -22,7 +21,7 @@ public class Delaunay : MonoBehaviour
     public void Start()
     {
         DelaunayTriangulation();
-        
+
         if(pointToAdd) AddPointToDelaunay(meshTransform.InverseTransformPoint(pointToAdd.position));
 
         if(voronoi == true) VoronoiFromDelaunay();
@@ -312,6 +311,8 @@ public class Delaunay : MonoBehaviour
 
         List<Vector3> lineVertices = new List<Vector3>();
         List<int> lineIndices = new List<int>();
+
+        HashSet<(int, int)> outsideSeg = new HashSet<(int, int)>();
         
         for(int i = 0; i < triangles.Length; i+=3)
         {
@@ -328,17 +329,93 @@ public class Delaunay : MonoBehaviour
             triangle.Add(vertices[triangles[i+2]]);
 
             AddVoronoiLine(ref lineVertices, ref lineIndices, vertices[triangles[i]], vertices[triangles[i+1]], centerIndex);
-
             //If center of the circle is on the wrong side of the triangle segment flip the voronoi segment
             VoronoiFlip(center, triangle, 0, 1, ref lineIndices, ref lineVertices);
+            outsideSeg.Add((centerIndex, lineIndices[lineIndices.Count-1]));
 
             AddVoronoiLine(ref lineVertices, ref lineIndices, vertices[triangles[i+1]], vertices[triangles[i+2]], centerIndex);
-
             VoronoiFlip(center, triangle, 1, 2, ref lineIndices, ref lineVertices);
+            outsideSeg.Add((centerIndex, lineIndices[lineIndices.Count-1]));
 
             AddVoronoiLine(ref lineVertices, ref lineIndices, vertices[triangles[i]], vertices[triangles[i+2]], centerIndex);
-
             VoronoiFlip(center, triangle, 2, 0, ref lineIndices, ref lineVertices);
+            outsideSeg.Add((centerIndex, lineIndices[lineIndices.Count-1]));
+        }
+
+        //List outside seg by remove inside seg
+        for(int index = 0; index < lineIndices.Count; index+=2)
+        {
+            int count = 0;
+
+            for(int i = 0; i < lineIndices.Count; i+=2)
+            {
+                if(lineIndices[i+1] == lineIndices[index+1])
+                {
+                    count++;
+                }
+            }
+
+            if(count > 1)
+            {
+                outsideSeg.Remove((lineIndices[index], lineIndices[index+1]));
+            }
+        }
+
+        //Handle special cases by shortening or removing, if not special elongate the outside edge
+        foreach ((int, int) seg in outsideSeg) 
+        {
+            bool found = false;
+
+            for(int i = 0; i < lineIndices.Count && found == false; i+=2)
+            {
+
+                if((lineIndices[i], lineIndices[i+1]) == seg)
+                {
+                    int newEnd = -1;
+                    bool hasCollided = false;
+                    Vector3 collision = Vector3.zero;
+                    float sqrDist = 0;
+
+                    for(int cpt = 0; cpt < lineIndices.Count; cpt+=2)
+                    {
+                        if(outsideSeg.Contains((lineIndices[cpt], lineIndices[cpt+1])) == false && cpt != i)
+                        {
+                            if(lineIndices[cpt] != lineIndices[i] && OnSegment(lineVertices[lineIndices[i]], lineVertices[lineIndices[cpt]], lineVertices[lineIndices[i+1]]) == true)
+                            {
+                                if(newEnd == -1 || (lineVertices[newEnd] - lineVertices[lineIndices[i]]).sqrMagnitude >  (lineVertices[lineIndices[cpt]] - lineVertices[lineIndices[i+1]]).sqrMagnitude)
+                                {
+                                    newEnd = lineIndices[cpt];
+                                }
+                            }
+
+                            Vector3 newCollision;
+                            bool collide = SegmentIntersection(lineVertices[lineIndices[cpt]], lineVertices[lineIndices[cpt+1]], lineVertices[lineIndices[i]], lineVertices[lineIndices[i+1]], out newCollision);
+
+                            if(collide == true && (hasCollided == false || sqrDist >  (newCollision - lineVertices[lineIndices[i]]).sqrMagnitude))
+                            {
+                                sqrDist = (newCollision - lineVertices[lineIndices[i]]).sqrMagnitude;
+                                collision = newCollision;
+                                hasCollided = true;
+                            }
+                        }
+                    }
+
+                    if(newEnd != -1 && ((sqrDist > (lineVertices[newEnd] - lineVertices[lineIndices[i]]).sqrMagnitude) || (hasCollided == false)))
+                    {
+                        lineIndices[i+1] = newEnd;
+
+                    }else if(hasCollided == true)
+                    {
+                        //segToSegTri.Remove((lineIndices[i2-1], lineIndices[i2]));
+                        lineIndices.RemoveRange(i, 2);
+                    }else{//Elongate outside edge
+
+                        lineVertices[lineIndices[i+1]] += (lineVertices[lineIndices[i+1]] - lineVertices[lineIndices[i]]) * 100;
+                    }
+
+                    found = true;
+                }
+            }
         }
 
         //Creates cubes children to represent cell cores
@@ -411,7 +488,7 @@ public class Delaunay : MonoBehaviour
     }
 
     //If center of the circle is on the wrong side of the triangle segment flip the voronoi segment
-    public void VoronoiFlip(in Vector3 center, in List<Vector3> triangle, int a, int b, ref List<int> lineIndices, ref List<Vector3> lineVertices)
+    public bool VoronoiFlip(in Vector3 center, in List<Vector3> triangle, int a, int b, ref List<int> lineIndices, ref List<Vector3> lineVertices)
     {
         //Debug.Log(IsInsideTriangle(vertices[triangles[i]], vertices[triangles[i+1]], vertices[triangles[i+2]], center));
         Vector3 lineMiddle = (center + lineVertices[lineIndices[lineIndices.Count-1]]);
@@ -425,9 +502,13 @@ public class Delaunay : MonoBehaviour
 
         if((clockwise == true && orientation == 1) || (clockwise == false && orientation == 2))
         {
-            lineVertices.Add((center - lineVertices[lineVertices.Count-1]) + center);
+            lineVertices.Add((center - lineVertices[lineVertices.Count-1]) * 500 + center);
             lineIndices[lineIndices.Count-1] = lineVertices.Count - 1;
+
+            return true;
         }
+
+        return false;
     }
 
     public bool isClockwise(in List<Vector3> polygon)
@@ -580,5 +661,13 @@ public class Delaunay : MonoBehaviour
         if (CollisionDroiteSeg(O, P, A, B) == false)
             return false;
         return true;
+    }
+
+    //Check if Q is segment PR
+    bool OnSegment(Vector3 p, Vector3 q, Vector3 r)
+    {
+        if (q.x <= Mathf.Max(p.x, r.x) && q.x >= Mathf.Min(p.x, r.x) && q.y <= Mathf.Max(p.y, r.y) && q.y >= Mathf.Min(p.y, r.y))
+            return true;
+        return false;
     }
 }
