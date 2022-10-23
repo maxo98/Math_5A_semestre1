@@ -16,15 +16,20 @@ public class Delaunay : MonoBehaviour
 
     public GameObject point;
 
+    public Transform pointToAdd;
+
     // Start is called before the first frame update
-    void Start()
+    public void Start()
     {
         DelaunayTriangulation();
+        
+        if(pointToAdd) AddPointToDelaunay(meshTransform.InverseTransformPoint(pointToAdd.position));
+
         if(voronoi == true) VoronoiFromDelaunay();
     }
 
     // Update is called once per frame
-    void Update()
+    public void Update()
     {
         /*Mesh mesh = meshFilter.mesh;
 
@@ -38,7 +43,7 @@ public class Delaunay : MonoBehaviour
         //Debug.Log(cube.position);
     }
 
-    void DelaunayTriangulation()
+    public void DelaunayTriangulation()
     {
         int[] triangles = meshFilter.mesh.triangles;
         Vector3[] vertices = meshFilter.mesh.vertices;
@@ -161,12 +166,145 @@ public class Delaunay : MonoBehaviour
         meshFilter.mesh.triangles = triangles;
     }
 
-    void VoronoiFromDelaunay()
+    public void AddPointToDelaunay(Vector3 newPoint)
     {
+        //Remove double side
+        List<int> triangles = new List<int>(meshFilter.mesh.triangles);
+        triangles.RemoveRange(meshFilter.mesh.triangles.Length/2, meshFilter.mesh.triangles.Length/2);
+        List<Vector3> vertices = new List<Vector3>(meshFilter.mesh.vertices);
+
+        Queue<(int, int)> segments = new Queue<(int, int)>();
+
+        bool insideTriangle = false;
+
+        //Check if the point is inside a triangle
+        for(int i = 0; i < triangles.Count && insideTriangle == false; i+=3)
+        {
+            List<Vector3> triangle = new List<Vector3>();
+
+            triangle.Add(vertices[triangles[i]]);
+            triangle.Add(vertices[triangles[i+1]]);
+            triangle.Add(vertices[triangles[i+2]]);
+
+            if(InsidePolygon(newPoint, triangle) == true)
+            {
+                insideTriangle = true;
+                segments.Enqueue((triangles[i], triangles[i+1]));
+                segments.Enqueue((triangles[i+1], triangles[i+2]));
+                segments.Enqueue((triangles[i+2], triangles[i]));
+                triangles.RemoveRange(i, 3);
+            }
+        }
+
+        if(insideTriangle != true)
+        {
+            //List visible vertices
+            HashSet<int> visibleVertices = new HashSet<int>();
+
+            for(int cpt = 0; cpt < vertices.Count; cpt++)
+            {
+                bool intersection = false;
+
+                for(int i = 0; i < triangles.Count && insideTriangle == false; i+=3)
+                {
+                    Vector3 dummy;
+
+                    if(SegmentIntersection(vertices[cpt], newPoint, vertices[triangles[i]], vertices[triangles[i+1]], out dummy))
+                    {
+                        intersection = true;
+                        break;
+                    }
+
+                    if(SegmentIntersection(vertices[cpt], newPoint, vertices[triangles[i+2]], vertices[triangles[i+1]], out dummy))
+                    {
+                        intersection = true;
+                        break;
+                    }
+
+                    if(SegmentIntersection(vertices[cpt], newPoint, vertices[triangles[i]], vertices[triangles[i+2]], out dummy))
+                    {
+                        intersection = true;
+                        break;
+                    }
+                }
+
+                if(intersection == false)
+                {
+                    visibleVertices.Add(cpt);
+                }
+            }
+
+            //List visible segments
+            for(int i = 0; i < triangles.Count && insideTriangle == false; i+=3)
+            {
+                if(visibleVertices.Contains(triangles[i]) && visibleVertices.Contains(triangles[i+1]))
+                {
+                    segments.Enqueue((triangles[i], triangles[i+1]));
+                }
+
+                if(visibleVertices.Contains(triangles[i+2]) && visibleVertices.Contains(triangles[i+1]))
+                {
+                    segments.Enqueue((triangles[i+1], triangles[i+2]));
+                }
+
+                if(visibleVertices.Contains(triangles[i]) && visibleVertices.Contains(triangles[i+2]))
+                {
+                    segments.Enqueue((triangles[i], triangles[i+2]));
+                }
+            }
+        }
+
+        while(segments.Count != 0)
+        {
+            (int, int) segment = segments.Dequeue();
+
+            int i = FindEdge(segment, triangles);
+
+            if(i == -1)
+            {
+                //Add new triangle
+                triangles.Add(segment.Item1);
+                triangles.Add(segment.Item2);
+                triangles.Add(vertices.Count);
+            }else{
+                Vector3 circleCenter = GetCircleCenter(vertices[triangles[i]], vertices[triangles[i+1]], vertices[triangles[i+2]]);
+                float sqrRadius = (circleCenter - vertices[triangles[i]]).sqrMagnitude;
+
+                //If new point inside circle of triangle
+                if(sqrRadius > (circleCenter - newPoint).sqrMagnitude)
+                {
+                    segments.Enqueue((triangles[i], triangles[i+1]));
+                    segments.Enqueue((triangles[i+1], triangles[i+2]));
+                    segments.Enqueue((triangles[i+2], triangles[i]));
+                    triangles.RemoveRange(i, 3);
+                
+                }else{
+                    //Add new triangle
+                    triangles.Add(segment.Item1);
+                    triangles.Add(segment.Item2);
+                    triangles.Add(vertices.Count);
+                }
+            }
+        }
+
+        vertices.Add(newPoint);
+
+        int[] triangleArray = triangles.ToArray();
+
+        DoubleFaceIndices(ref triangleArray);
+
+        meshFilter.mesh.SetVertices(vertices.ToArray());
+        meshFilter.mesh.triangles = triangleArray;
+    }
+
+    public void VoronoiFromDelaunay()
+    {
+        //Destroy children
         foreach (Transform child in meshTransform.transform) {
             GameObject.Destroy(child.gameObject);
         }
 
+        //Remove double side
         List<int> temp = new List<int>(meshFilter.mesh.triangles);
         temp.RemoveRange(meshFilter.mesh.triangles.Length/2, meshFilter.mesh.triangles.Length/2);
         int[] triangles = temp.ToArray();
@@ -177,6 +315,7 @@ public class Delaunay : MonoBehaviour
         
         for(int i = 0; i < triangles.Length; i+=3)
         {
+            //Add the center of the circle to the vertices
             Vector3 center = GetCircleCenter(vertices[triangles[i]], vertices[triangles[i+1]], vertices[triangles[i+2]]);
             center.z = vertices[triangles[i]].z;
             
@@ -190,6 +329,7 @@ public class Delaunay : MonoBehaviour
 
             AddVoronoiLine(ref lineVertices, ref lineIndices, vertices[triangles[i]], vertices[triangles[i+1]], centerIndex);
 
+            //If center of the circle is on the wrong side of the triangle segment flip the voronoi segment
             VoronoiFlip(center, triangle, 0, 1, ref lineIndices, ref lineVertices);
 
             AddVoronoiLine(ref lineVertices, ref lineIndices, vertices[triangles[i+1]], vertices[triangles[i+2]], centerIndex);
@@ -201,6 +341,7 @@ public class Delaunay : MonoBehaviour
             VoronoiFlip(center, triangle, 2, 0, ref lineIndices, ref lineVertices);
         }
 
+        //Creates cubes children to represent cell cores
         int offset = lineVertices.Count;
 
         lineVertices.InsertRange(lineVertices.Count, vertices);
@@ -214,6 +355,7 @@ public class Delaunay : MonoBehaviour
             cellCoreIndices.Add(offset + i);
         }
 
+        //Attribute the vertices and indices to the mesh
         meshFilter.mesh.Clear();
         meshFilter.mesh.subMeshCount = 2;
         meshFilter.mesh.SetVertices(lineVertices);
@@ -223,7 +365,7 @@ public class Delaunay : MonoBehaviour
         meshRenderer.material = voronoiMat;
     }
 
-    void AddVoronoiLine(ref List<Vector3> lineVertices, ref List<int> lineIndices, in Vector3 vertA, in Vector3 vertB, int centerIndex)
+    public void AddVoronoiLine(ref List<Vector3> lineVertices, ref List<int> lineIndices, in Vector3 vertA, in Vector3 vertB, int centerIndex)
     {
         Vector3 lineMiddle = (vertA + vertB);
         lineMiddle.x /= 2;
@@ -242,32 +384,34 @@ public class Delaunay : MonoBehaviour
         lineIndices.Add(lineIndex);
     }
 
-    //Returns the number of time the edge appears in the mesh
-    int FindEdge((int, int) edge, in int[] triangles)
+    //Reutns the index of first triangle continaing the edge or -1
+    public int FindEdge((int, int) edge, in List<int> triangles)
     {
         int i = 0;
-        int found = 0;
 
-        while(i < triangles.Length)
+        while(i < triangles.Count)
         {
             if((triangles[i], triangles[i+1]) == edge || (triangles[i+1], triangles[i]) == edge)
             {
-                found++;
+                return i;
+
             }else if((triangles[i+1], triangles[i+2]) == edge || (triangles[i+2], triangles[i+1]) == edge)
             {
-                found++;
+                return i;
+
             }else if((triangles[i], triangles[i+2]) == edge || (triangles[i+2], triangles[i]) == edge)
             {
-                found++;
+                return i;
             }
                 
             i+=3;
         }
 
-        return found;
+        return -1;
     }
 
-    void VoronoiFlip(in Vector3 center, in List<Vector3> triangle, int a, int b, ref List<int> lineIndices, ref List<Vector3> lineVertices)
+    //If center of the circle is on the wrong side of the triangle segment flip the voronoi segment
+    public void VoronoiFlip(in Vector3 center, in List<Vector3> triangle, int a, int b, ref List<int> lineIndices, ref List<Vector3> lineVertices)
     {
         //Debug.Log(IsInsideTriangle(vertices[triangles[i]], vertices[triangles[i+1]], vertices[triangles[i+2]], center));
         Vector3 lineMiddle = (center + lineVertices[lineIndices[lineIndices.Count-1]]);
@@ -286,7 +430,7 @@ public class Delaunay : MonoBehaviour
         }
     }
 
-    static public bool isClockwise(in List<Vector3> polygon)
+    public bool isClockwise(in List<Vector3> polygon)
     {
         float sum = 0;
 
@@ -305,7 +449,7 @@ public class Delaunay : MonoBehaviour
     // 0 --> a, b and c are colinear
     // 1 --> c is on the right
     // 2 --> c is on the left
-    static public byte Orientation(Vector3 a, Vector3 b, Vector3 c)
+    public byte Orientation(Vector3 a, Vector3 b, Vector3 c)
     {
         double ABx = b.x - a.x;
         double ABy = b.y - a.y;
@@ -319,7 +463,7 @@ public class Delaunay : MonoBehaviour
         return (byte)((val < 0) ? 1 : 2); // sens horaire ou sens anti-hoaraire
     }
 
-    Vector3 GetCircleCenter(Vector3 p1, Vector3 p2, Vector3 p3)
+    public Vector3 GetCircleCenter(Vector3 p1, Vector3 p2, Vector3 p3)
     {
         Vector3 pos = Vector3.zero;
 
@@ -368,5 +512,73 @@ public class Delaunay : MonoBehaviour
                 indices[indicesLength+i+cpt] = indices[i+n-1-cpt];
             }
         }
+    }
+
+    public bool InsidePolygon(Vector3 point, List<Vector3> polygon)
+    {
+        byte orient = Orientation(polygon[polygon.Count-1], polygon[0], point);
+
+        for(int i = 0; i < polygon.Count-1; i++)
+        {
+            if(orient != Orientation(polygon[i], polygon[i+1], point))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    
+    public bool SegmentIntersection(in Vector3 A, in Vector3 B, in Vector3 I, in Vector3 P, out Vector3 result)
+    {
+        Vector3 AB = new Vector3((A.x - B.x), (A.y - B.y), 0);
+        Vector3 IP = new Vector3((I.x - P.x), (I.y - P.y), 0);
+
+        float det = AB.x * IP.y - AB.y * IP.x;
+
+        result = Vector3.zero;
+
+        if(det == 0)
+        {
+            //Parallel or colinear
+            return false;
+        }else {
+
+            if (CollisionSegSeg(A, B, I, P)) {
+                float t1 = ((A.x * B.y - A.y * B.x) * (I.x - P.x) - (A.x - B.x) * (I.x * P.y - I.y * P.x)) / det;
+                float t2 = ((A.x * B.y - A.y * B.x) * (I.y - P.y) - (A.y - B.y) * (I.x * P.y - I.y * P.x)) / det;
+
+                result = new Vector3(t1, t2, A.z);
+
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    public bool CollisionDroiteSeg(in Vector3 A, in Vector3 B, in Vector3 O, in Vector3 P)
+    {
+        Vector3 AO = Vector3.zero, AP = Vector3.zero, AB = Vector3.zero;
+        AB.x = B.x - A.x;
+        AB.y = B.y - A.y;
+        AP.x = P.x - A.x;
+        AP.y = P.y - A.y;
+        AO.x = O.x - A.x;
+        AO.y = O.y - A.y;
+        if ((AB.x * AP.y - AB.y * AP.x) * (AB.x * AO.y - AB.y * AO.x) < 0)
+            return true;
+        else
+            return false;
+    }
+
+    public bool CollisionSegSeg(in Vector3 A, in Vector3 B, in Vector3 O, in Vector3 P)
+    {
+        if (CollisionDroiteSeg(A, B, O, P) == false)
+            return false;  // inutile d'aller plus loin si le segment [OP] ne touche pas la droite (AB)
+        if (CollisionDroiteSeg(O, P, A, B) == false)
+            return false;
+        return true;
     }
 }
