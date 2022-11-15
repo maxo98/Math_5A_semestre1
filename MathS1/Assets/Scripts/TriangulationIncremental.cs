@@ -57,6 +57,8 @@ public class TriangulationIncremental : MonoBehaviour
         
         for (var i = k; i < _pointsListSorted.Count; i++)
         {
+            _vertices.Add(_pointsListSorted[i]);
+            var trianglesToAdd = new List<int>();
             for (var h = 0; h < _triangles.Count; h += 3)
             {
                 var verticesCanSee = new List<Vector3>();
@@ -80,36 +82,28 @@ public class TriangulationIncremental : MonoBehaviour
                             break;
                     }
 
-                    if (!DoIntersect(_vertices[h + l], _pointsListSorted[i], _vertices[h + vertex1],
-                            _vertices[h + vertex2]))
-                        verticesCanSee.Add(_vertices[h + l]);
+                    if (!DoIntersect(_vertices[l], _pointsListSorted[i], _vertices[vertex1],
+                            _vertices[vertex2]))
+                        verticesCanSee.Add(_vertices[l]);
                 }
-
-                switch (verticesCanSee.Count)
+                for(var j = 0; j < verticesCanSee.Count; j++)
                 {
-                    case 2:
-                        _vertices.Add(_pointsListSorted[i]);
-                        _triangles.Add(_vertices.Count - 1);
-                        _vertices.Add(verticesCanSee[0]);
-                        _triangles.Add(_vertices.Count - 1);
-                        _vertices.Add(verticesCanSee[1]);
-                        _triangles.Add(_vertices.Count - 1);
-                        break;
-                    case 3:
-                        _vertices.Add(_pointsListSorted[i]);
-                        _triangles.Add(_vertices.Count - 1);
-                        _vertices.Add(verticesCanSee[0]);
-                        _triangles.Add(_vertices.Count - 1);
-                        _vertices.Add(verticesCanSee[1]);
-                        _triangles.Add(_vertices.Count - 1);
-                        _vertices.Add(_pointsListSorted[i]);
-                        _triangles.Add(_vertices.Count - 1);
-                        _vertices.Add(verticesCanSee[1]);
-                        _triangles.Add(_vertices.Count - 1);
-                        _vertices.Add(verticesCanSee[2]);
-                        _triangles.Add(_vertices.Count - 1);
-                        break;
+                    if(j%2 == 0)
+                        trianglesToAdd.Add(_vertices.IndexOf(_pointsListSorted[i], _vertices.Count-1));
+                    for (var n = 0; n < _vertices.Count; n++)
+                    {
+                        if (_vertices[n].Equals(verticesCanSee[j]))
+                        {
+                            trianglesToAdd.Add(n);
+                            break;
+                        }
+                    }
                 }
+            }
+            
+            foreach (var index in trianglesToAdd)
+            {
+                _triangles.Add(index);
             }
             k++;
         }
@@ -118,6 +112,7 @@ public class TriangulationIncremental : MonoBehaviour
         DoubleFaceIndices(ref trianglesArray);
         _mesh.triangles = trianglesArray;
         _mesh.vertices = _vertices.ToArray();
+        
         
         /*
          test affichage triangles
