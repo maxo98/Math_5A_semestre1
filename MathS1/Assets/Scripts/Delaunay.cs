@@ -573,7 +573,7 @@ public class Delaunay : MonoBehaviour
         return pos;
     }
 
-    public void DoubleFaceIndices(ref int[] indices)
+    public static void DoubleFaceIndices(ref int[] indices)
     {
         int n = 3;
 
