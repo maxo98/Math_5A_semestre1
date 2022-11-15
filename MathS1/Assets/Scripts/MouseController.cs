@@ -4,13 +4,14 @@ public class MouseController : MonoBehaviour
 {
     [SerializeField] private GameObject point;
     [SerializeField] private SceneManager sceneManagerScript;
+    [SerializeField] private GameObject background;
     private void Update()
     {
         if (Input.GetMouseButtonDown(0))
-            CastRayFromMouseClick();
+            InstantiateSphereFromRayCasting();
     }
 
-    private void CastRayFromMouseClick()
+    private void InstantiateSphereFromRayCasting()
     {
         if (Camera.main == null) return;
         
@@ -20,7 +21,7 @@ public class MouseController : MonoBehaviour
         if (!Physics.Raycast(ray, out var hit, 100, layerMask)) return;
 
         var newPoint = GameObject.Instantiate(point);
-        newPoint.transform.position = hit.point;
+        newPoint.transform.position = new Vector3(hit.point.x,background.transform.position.y,hit.point.z);
         sceneManagerScript.AddPoint(newPoint);
     }
 }

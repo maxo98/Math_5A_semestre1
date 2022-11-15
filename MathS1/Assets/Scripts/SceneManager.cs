@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,5 +14,10 @@ public class SceneManager : MonoBehaviour
     public void AddPoint(GameObject newPoint)
     {
         pointList.Add(newPoint);
+    }
+
+    public List<GameObject> GetPointList()
+    {
+        return pointList;
     }
 }
