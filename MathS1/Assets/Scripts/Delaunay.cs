@@ -42,6 +42,31 @@ public class Delaunay : MonoBehaviour
         //Debug.Log(cube.position);
     }
 
+    public void RemoveDuplicate(ref List<Vector3> vertices, ref List<int> triangles)
+    {
+        for(int i = 0; i < vertices.Count; i++)
+        {
+            for(int cpt = i+1; cpt < vertices.Count; cpt++)
+            {
+                if(vertices[i] == vertices[cpt])
+                {
+                    for(int i2 = 0; i2 < triangles.Count; i2++)
+                    {
+                        if(triangles[i2] == cpt)
+                        {
+                            triangles[i2] = i;
+                        }else if(triangles[i2] > cpt)
+                        {
+                            triangles[i2]--;
+                        }
+                    }
+
+                    vertices.RemoveAt(cpt);
+                }
+            }
+        }
+    }
+
     public void DelaunayTriangulation()
     {
         int[] triangles = meshFilter.mesh.triangles;
@@ -160,9 +185,17 @@ public class Delaunay : MonoBehaviour
             }
         }
 
+        List<int> listTri = new List<int>(triangles);
+        List<Vector3> listVert = new List<Vector3>(vertices);
+
+        RemoveDuplicate(ref listVert, ref listTri);
+
+        triangles = listTri.ToArray();
+
         DoubleFaceIndices(ref triangles);
 
         meshFilter.mesh.triangles = triangles;
+        meshFilter.mesh.vertices = listVert.ToArray();
     }
 
     public void AddPointToDelaunay(Vector3 newPoint)
@@ -288,10 +321,15 @@ public class Delaunay : MonoBehaviour
 
         vertices.Add(newPoint);
 
+        RemoveDuplicate(ref vertices, ref triangles);
+
         int[] triangleArray = triangles.ToArray();
 
         DoubleFaceIndices(ref triangleArray);
 
+        int[] tmp = new int[0];
+
+        meshFilter.mesh.triangles = tmp;
         meshFilter.mesh.SetVertices(vertices.ToArray());
         meshFilter.mesh.triangles = triangleArray;
     }
