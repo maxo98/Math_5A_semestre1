@@ -7,8 +7,6 @@ using static Delaunay;
 
 public class TriangulationIncremental : MonoBehaviour
 {
-    private const int MaxTriangles = 10000000;
-    private const int MaxVertices = 10000000;
     [SerializeField] private SceneManager sceneManagerScript;
     [SerializeField] private MeshFilter meshFilter;
     [SerializeField] private MeshRenderer meshRenderer;
@@ -18,14 +16,6 @@ public class TriangulationIncremental : MonoBehaviour
     private List<Vector3> _vertices;
     private Mesh _mesh;
     
-    // Start is called before the first frame update
-    void Start()
-    {
-        _pointsListSorted = new List<Vector3>();
-        _mesh = meshFilter.mesh;
-        _triangles = new List<int>();
-        _vertices =  new List<Vector3>();
-    }
 
     // Update is called once per frame
     private void Update()
@@ -37,6 +27,10 @@ public class TriangulationIncremental : MonoBehaviour
 
     private void SortPointList()
     {
+        _pointsListSorted = new List<Vector3>();
+        _mesh = meshFilter.mesh;
+        _triangles = new List<int>();
+        _vertices =  new List<Vector3>();
         var ordered = from v in sceneManagerScript.GetPointList()
             orderby v.transform.position.x, v.transform.position.y
             select v.transform.position;
@@ -59,11 +53,18 @@ public class TriangulationIncremental : MonoBehaviour
         {
             _vertices.Add(_pointsListSorted[i]);
             var trianglesToAdd = new List<int>();
+            var verticesCantSee = new List<int>();
             for (var h = 0; h < _triangles.Count; h += 3)
             {
-                var verticesCanSee = new List<Vector3>();
+                var verticesCanSee = new List<int>();
+                var newTrianglesToAdd = true;
                 for (var l = 0; l < 3; l++)
                 {
+                    if (_vertices[_triangles[h + l]] == _pointsListSorted[i])
+                    {
+                        newTrianglesToAdd = false;
+                        break;
+                    }
                     var vertex1 = 0;
                     var vertex2 = 0;
                     switch (l)
@@ -82,28 +83,56 @@ public class TriangulationIncremental : MonoBehaviour
                             break;
                     }
 
-                    if (!DoIntersect(_vertices[l], _pointsListSorted[i], _vertices[vertex1],
-                            _vertices[vertex2]))
-                        verticesCanSee.Add(_vertices[l]);
-                }
-                for(var j = 0; j < verticesCanSee.Count; j++)
-                {
-                    if(j%2 == 0)
-                        trianglesToAdd.Add(_vertices.IndexOf(_pointsListSorted[i], _vertices.Count-1));
-                    for (var n = 0; n < _vertices.Count; n++)
+                    if (!DoIntersect(_vertices[_triangles[h + l]], _pointsListSorted[i], 
+                            _vertices[_triangles[h + vertex1]], _vertices[_triangles[h + vertex2]]) 
+                        && !verticesCantSee.Contains(_triangles[h + l]) && !verticesCanSee.Contains(_triangles[h + l]))
+                        verticesCanSee.Add(_triangles[h + l]);
+                    else 
                     {
-                        if (_vertices[n].Equals(verticesCanSee[j]))
-                        {
-                            trianglesToAdd.Add(n);
-                            break;
-                        }
+                        if(verticesCanSee.Contains(_triangles[h + l]))
+                            verticesCanSee.Remove(_triangles[h + l]);
+                        if(!verticesCantSee.Contains(_triangles[h + l]))
+                            verticesCantSee.Add(_triangles[h + l]);
+                    }
+                }
+
+                if (!newTrianglesToAdd) continue;
+                for (var j = 0; j < verticesCanSee.Count; j++)
+                {
+                    if (j % 2 == 0)
+                        trianglesToAdd.Add(_vertices.IndexOf(_pointsListSorted[i], _vertices.Count - 1));
+                    if (verticesCanSee.Count % 2 != 0 && j + 2 > verticesCanSee.Count)
+                    {
+                        trianglesToAdd.Add(verticesCanSee[j - 1]);
+                    }
+                    trianglesToAdd.Add(verticesCanSee[j]);
+                }
+            }
+
+            var triangleIndex = trianglesToAdd.Count - 1;
+            while(triangleIndex >= 0)
+            {
+                var vertexFound = false;
+                for (var n = 0; n < 3; n++)
+                {
+                    foreach (var vertex in verticesCantSee.Where(vertex => trianglesToAdd[triangleIndex + n].Equals(vertex)))
+                    {
+                        vertexFound = true;
+                    }
+                }
+                if (!vertexFound)
+                    triangleIndex -= 3;
+                else
+                {
+                    for (var n = 0; n < 3; n++)
+                    {
+                        trianglesToAdd.RemoveAt(triangleIndex + n);
                     }
                 }
             }
-            
-            foreach (var index in trianglesToAdd)
+            foreach (var vertex in trianglesToAdd)
             {
-                _triangles.Add(index);
+                _triangles.Add(vertex);
             }
             k++;
         }
