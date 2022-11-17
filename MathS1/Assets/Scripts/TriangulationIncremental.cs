@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using static Delaunay;
 
@@ -15,7 +16,10 @@ public class TriangulationIncremental : MonoBehaviour
     private List<int> _triangles;
     private List<Vector3> _vertices;
     private Mesh _mesh;
-    
+
+    private List<int> _trianglesToAdd;
+    private List<int> _verticesCanSee;
+    private List<int> _verticesCantSee;
 
     // Update is called once per frame
     private void Update()
@@ -48,110 +52,83 @@ public class TriangulationIncremental : MonoBehaviour
             k++;
         }
 
-        
         for (var i = k; i < _pointsListSorted.Count; i++)
         {
             _vertices.Add(_pointsListSorted[i]);
-            var trianglesToAdd = new List<int>();
-            var verticesCantSee = new List<int>();
+            _trianglesToAdd = new List<int>();
+            _verticesCantSee = new List<int>();
+            var newTriangles = new List<int>();
             for (var h = 0; h < _triangles.Count; h += 3)
             {
-                var verticesCanSee = new List<int>();
-                var newTrianglesToAdd = true;
-                for (var l = 0; l < 3; l++)
-                {
-                    if (_vertices[_triangles[h + l]] == _pointsListSorted[i])
-                    {
-                        newTrianglesToAdd = false;
-                        break;
-                    }
-                    var vertex1 = 0;
-                    var vertex2 = 0;
-                    switch (l)
-                    {
-                        case 0:
-                            vertex1 = 1;
-                            vertex2 = 2;
-                            break;
-                        case 1:
-                            vertex1 = 0;
-                            vertex2 = 2;
-                            break;
-                        default:
-                            vertex1 = 0;
-                            vertex2 = 1;
-                            break;
-                    }
-
-                    if (!DoIntersect(_vertices[_triangles[h + l]], _pointsListSorted[i], 
-                            _vertices[_triangles[h + vertex1]], _vertices[_triangles[h + vertex2]]) 
-                        && !verticesCantSee.Contains(_triangles[h + l]) && !verticesCanSee.Contains(_triangles[h + l]))
-                        verticesCanSee.Add(_triangles[h + l]);
-                    else 
-                    {
-                        if(verticesCanSee.Contains(_triangles[h + l]))
-                            verticesCanSee.Remove(_triangles[h + l]);
-                        if(!verticesCantSee.Contains(_triangles[h + l]))
-                            verticesCantSee.Add(_triangles[h + l]);
-                    }
-                }
-
-                if (!newTrianglesToAdd) continue;
-                for (var j = 0; j < verticesCanSee.Count; j++)
-                {
-                    if (j % 2 == 0)
-                        trianglesToAdd.Add(_vertices.IndexOf(_pointsListSorted[i], _vertices.Count - 1));
-                    if (verticesCanSee.Count % 2 != 0 && j + 2 > verticesCanSee.Count)
-                    {
-                        trianglesToAdd.Add(verticesCanSee[j - 1]);
-                    }
-                    trianglesToAdd.Add(verticesCanSee[j]);
-                }
+                _verticesCanSee = new List<int>();
+                newTriangles.AddRange(CheckCanSeeFromTriangle(_triangles, h, i));
             }
-
-            var triangleIndex = trianglesToAdd.Count - 1;
-            while(triangleIndex >= 0)
+            for (var j = 0; j < newTriangles.Count; j++)
             {
-                var vertexFound = false;
-                for (var n = 0; n < 3; n++)
-                {
-                    foreach (var vertex in verticesCantSee.Where(vertex => trianglesToAdd[triangleIndex + n].Equals(vertex)))
-                    {
-                        vertexFound = true;
-                    }
-                }
-                if (!vertexFound)
-                    triangleIndex -= 3;
-                else
-                {
-                    for (var n = 0; n < 3; n++)
-                    {
-                        trianglesToAdd.RemoveAt(triangleIndex + n);
-                    }
-                }
+                if(j%2 ==0)
+                    _trianglesToAdd.Add(_vertices.Count - 1);
+                _trianglesToAdd.Add(newTriangles[j]);
             }
-            foreach (var vertex in trianglesToAdd)
-            {
-                _triangles.Add(vertex);
-            }
+            
+            _triangles.AddRange(_trianglesToAdd);
             k++;
         }
-
         var trianglesArray = _triangles.ToArray();
         DoubleFaceIndices(ref trianglesArray);
         _mesh.triangles = trianglesArray;
         _mesh.vertices = _vertices.ToArray();
-        
-        
-        /*
-         test affichage triangles
-         _vertices = new[] { _pointsListSorted[0], _pointsListSorted[1], _pointsListSorted[2] };
-        _triangles = new[] { 0, 2, 1 };
-        
-        */
-
     }
-    
+
+    private IEnumerable<int> CheckCanSeeFromTriangle(IReadOnlyList<int> triangles, int triangleIndex, int vertexIndex)
+    {
+        var newTriangles = new List<int>();
+        for (var l = 0; l < 3; l++)
+        {
+            if (_vertices[triangles[triangleIndex + l]].Equals(_pointsListSorted[vertexIndex]))
+            {
+                break;
+            }
+
+            int vertex1, vertex2;
+            switch (l)
+            {
+                case 0:
+                    vertex1 = 1;
+                    vertex2 = 2;
+                    break;
+                case 1:
+                    vertex1 = 0;
+                    vertex2 = 2;
+                    break;
+                default:
+                    vertex1 = 0;
+                    vertex2 = 1;
+                    break;
+            }
+
+            if (!DoIntersect(_vertices[triangles[triangleIndex + l]], _pointsListSorted[vertexIndex],
+                    _vertices[_triangles[triangleIndex + vertex1]], _vertices[triangles[triangleIndex + vertex2]])
+                && !_verticesCantSee.Contains(triangles[triangleIndex + l]))
+            {
+                if (!_verticesCanSee.Contains(triangles[triangleIndex + l]))
+                    _verticesCanSee.Add(triangles[triangleIndex + l]);
+            }
+            else
+            {
+                if (_verticesCanSee.Contains(triangles[triangleIndex + l]))
+                    _verticesCanSee.Remove(triangles[triangleIndex + l]);
+                if (!_verticesCantSee.Contains(triangles[triangleIndex + l]))
+                    _verticesCantSee.Add(triangles[triangleIndex + l]);
+            }
+
+            if (_verticesCanSee.Contains(triangles[triangleIndex + l]))
+            {
+                newTriangles.Add(triangles[triangleIndex + l]);
+            }
+        }
+        return newTriangles;
+    }
+
     private static bool OnSegment(Vector3 p, Vector3 q, Vector3 r)
     {
         return q.x <= Math.Max(p.x, r.x) && q.x >= Math.Min(p.x, r.x) &&
