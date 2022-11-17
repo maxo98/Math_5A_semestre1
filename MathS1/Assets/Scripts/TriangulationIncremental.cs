@@ -10,7 +10,6 @@ public class TriangulationIncremental : MonoBehaviour
 {
     [SerializeField] private SceneManager sceneManagerScript;
     [SerializeField] private MeshFilter meshFilter;
-    [SerializeField] private MeshRenderer meshRenderer;
 
     private List<Vector3> _pointsListSorted;
     private List<int> _triangles;
@@ -62,6 +61,7 @@ public class TriangulationIncremental : MonoBehaviour
             {
                 _verticesCanSee = new List<int>();
                 newTriangles.AddRange(CheckCanSeeFromTriangle(_triangles, h, i));
+                
             }
             for (var j = 0; j < newTriangles.Count; j++)
             {
@@ -82,50 +82,57 @@ public class TriangulationIncremental : MonoBehaviour
     private IEnumerable<int> CheckCanSeeFromTriangle(IReadOnlyList<int> triangles, int triangleIndex, int vertexIndex)
     {
         var newTriangles = new List<int>();
+        var lines = new List<Tuple<int, int>>
+        {
+            new(triangleIndex, triangleIndex + 1),
+            new(triangleIndex + 1, triangleIndex + 2),
+            new(triangleIndex + 2, triangleIndex),
+            new(triangleIndex, vertexIndex),
+            new(triangleIndex + 1, vertexIndex),
+            new(triangleIndex = 2, vertexIndex)
+        };
+        var middleIntersects = new List<bool>();
         for (var l = 0; l < 3; l++)
         {
             if (_vertices[triangles[triangleIndex + l]].Equals(_pointsListSorted[vertexIndex]))
             {
-                break;
+                return newTriangles;
             }
+        }
 
-            int vertex1, vertex2;
-            switch (l)
+        var i = 0;
+        foreach (var (item1, item2) in lines)
+        {
+            if (i < 3)
             {
-                case 0:
-                    vertex1 = 1;
-                    vertex2 = 2;
-                    break;
-                case 1:
-                    vertex1 = 0;
-                    vertex2 = 2;
-                    break;
-                default:
-                    vertex1 = 0;
-                    vertex2 = 1;
-                    break;
-            }
-
-            if (!DoIntersect(_vertices[triangles[triangleIndex + l]], _pointsListSorted[vertexIndex],
-                    _vertices[_triangles[triangleIndex + vertex1]], _vertices[triangles[triangleIndex + vertex2]])
-                && !_verticesCantSee.Contains(triangles[triangleIndex + l]))
-            {
-                if (!_verticesCanSee.Contains(triangles[triangleIndex + l]))
-                    _verticesCanSee.Add(triangles[triangleIndex + l]);
+                var middlePoint = (_vertices[triangles[item1]] + _vertices[triangles[item2]]) / 2;
+                var vertex1 = _vertices[triangles[item1]];
+                var vertex2 = _vertices[triangles[item2]];
+                var j = 0;
+                var newLineIsIntersecting = false;
+                var middleIsIntersecting = false;
+                foreach (var (secondItem1, secondItem2) in lines)
+                {
+                    if(j < 3)
+                        middleIsIntersecting = DoIntersect(middlePoint, _vertices[vertexIndex], _vertices[triangles[secondItem1]], _vertices[triangles[secondItem2]]);
+                    else
+                    {
+                        var secondVertex1 = _vertices[triangles[secondItem1]];
+                        var secondVertex2 = _vertices[triangles[secondItem2]];
+                        newLineIsIntersecting = DoIntersect(_vertices[secondItem1], _vertices[secondItem2], 
+                            _vertices[triangles[item1]], _vertices[triangles[item2]]);
+                    }
+                    j++;
+                }
+                
             }
             else
             {
-                if (_verticesCanSee.Contains(triangles[triangleIndex + l]))
-                    _verticesCanSee.Remove(triangles[triangleIndex + l]);
-                if (!_verticesCantSee.Contains(triangles[triangleIndex + l]))
-                    _verticesCantSee.Add(triangles[triangleIndex + l]);
+                
             }
-
-            if (_verticesCanSee.Contains(triangles[triangleIndex + l]))
-            {
-                newTriangles.Add(triangles[triangleIndex + l]);
-            }
+            i++;
         }
+        
         return newTriangles;
     }
 
