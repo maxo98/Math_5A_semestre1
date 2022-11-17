@@ -1,25 +1,15 @@
-using System;
 using System.Collections.Generic;
-using System.Numerics;
 using UnityEngine;
-using Vector3 = UnityEngine.Vector3;
 
 public class GrahamScan : MonoBehaviour
 {
     [SerializeField] private SceneManager sceneManagerScript;
     private GameObject _centerPoint;
     private List<GameObject> _pointsListSorted;
-    private GameObject _lineRenderer;
-    
 
     private void Start()
     {
         _pointsListSorted = new List<GameObject>();
-        _lineRenderer = new GameObject();
-        var lineRendererComponent =_lineRenderer.AddComponent<LineRenderer>();
-        lineRendererComponent.material = new Material(Shader.Find("Sprites/Default"));
-        lineRendererComponent.material.color = Color.cyan;
-        lineRendererComponent.widthMultiplier = 0.1f;
     }
     private void Update()
     {
@@ -30,92 +20,78 @@ public class GrahamScan : MonoBehaviour
         
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            Clear();
+            _pointsListSorted.Clear();
             InitCenterPoint();
             SortPointsByLowerAngle();
-            DrawLineBetweenPoints(_pointsListSorted);
+            DrawLineBetweenPoints(_pointsListSorted, Color.cyan);
+            Destroy(_centerPoint);
         }
 
         if (Input.GetKeyDown(KeyCode.T))
         {
-            Clear();
+            _pointsListSorted.Clear();
             InitCenterPoint();
             SortPointsByLowerAngle();
             ClearList(_pointsListSorted);
-            DrawLineBetweenPoints(_pointsListSorted);
+            DrawLineBetweenPoints(_pointsListSorted, Color.blue);
+            Destroy(_centerPoint);
         }
     }
 
-    public float test(Vector3 common, Vector3 to, Vector3 from)
+    private float GetAngle(Vector3 from, Vector3 common, Vector3 to)
     {
         Vector3 side1 = to-common;
         Vector3 side2 = from-common;
-        return Vector3.Angle(side1, side2);
+        var angle = Vector3.SignedAngle(side2, side1, Vector3.back);
+        return angle;
     }
     
     private void ClearList(List<GameObject> points)
     {
         var idx = 1;
         var lastPointChecked = points[0];
-        var blockLoop = 0;
 
-        while (idx < points.Count + 1 && blockLoop < 100)
+        while (idx < points.Count + 1)
         {
             var pointToControl = points[idx % points.Count];
             var pointNextToControl = points[(idx + 1) % points.Count];
             
-            var testAngle = test(pointToControl.transform.position, lastPointChecked.transform.position, pointNextToControl.transform.position);
+            var testAngle = GetAngle(lastPointChecked.transform.position,pointToControl.transform.position, pointNextToControl.transform.position);
 
-            Debug.Log("angle");
-            Debug.Log(testAngle);
-            
-            /*Debug.Log("Count");
-            Debug.Log(points.Count);
-            Debug.Log("idx");
-            Debug.Log(idx);*/
-            Debug.Log("blockloop");
-            Debug.Log(blockLoop);
-            
-            if (testAngle < 0)
+            if (testAngle >= 0)
             {
                 points.Remove(pointToControl);
+                lastPointChecked = points[0];
+                idx = 1;
             }
             else
             {
                 idx++;
                 lastPointChecked = pointToControl;
             }
-            
-            blockLoop += 1;
         }
         
     }
-    
-    private void DrawLineBetweenPoints(List<GameObject> list)
-    {
-        var lineRendererComponent = _lineRenderer.GetComponent<LineRenderer>();
-        lineRendererComponent.positionCount = list.Count;
-        
-        for (int i = 0; i < list.Count; i++)
-        {
-            lineRendererComponent.SetPosition(i, list[i].transform.position);
-        }
-    }
-    
-    private float AngleBetweenVectors(Vector3 from, Vector3 to, Vector3 normal)
-    {
-        /*return Vector3.Angle(from, to);*/
 
+    private float AngleBetweenVectorsAndNormal(Vector3 from, Vector3 to, Vector3 normal)
+    {
         float angle = Vector3.Angle(from,to);
         float sign = Mathf.Sign(Vector3.Dot(normal,Vector3.Cross(from,to)));
-
-        // angle in [-179,180]
         float signed_angle = angle * sign;
-
-        // angle in [0,360] (not used but included here for completeness)
-        //float angle360 =  (signed_angle + 180) % 360;
-
         return signed_angle;
+    }
+
+    private void DrawLineBetweenPoints(List<GameObject> list, Color color)
+    {
+        var lineRendererComponent = sceneManagerScript.GetLineRenderer().GetComponent<LineRenderer>();
+        lineRendererComponent.material.color = color;
+        lineRendererComponent.positionCount = 0;
+        lineRendererComponent.positionCount = list.Count + 1;
+        
+        for (int i = 0; i < list.Count + 1; i++)
+        {
+            lineRendererComponent.SetPosition(i, list[(i % list.Count)].transform.position);
+        }
     }
 
     private void SortPointsByLowerAngle()
@@ -124,14 +100,14 @@ public class GrahamScan : MonoBehaviour
 
         while (pointsList.Count > 0)
         {
-            var lowerAngle = AngleBetweenVectors(_centerPoint.transform.position, pointsList[0].transform.position, Vector3.up);
+            var lowerAngle = AngleBetweenVectorsAndNormal(_centerPoint.transform.position, pointsList[0].transform.position, Vector3.back);
             lowerAngle += 180;
             
             var pointWithLowerAngle = pointsList[0];
             
             foreach (var point in pointsList)
             {
-                var newAngle = AngleBetweenVectors(_centerPoint.transform.position, point.transform.position,  Vector3.up);
+                var newAngle = AngleBetweenVectorsAndNormal(_centerPoint.transform.position, point.transform.position,  Vector3.back);
                 newAngle += 180;
                 
                 if (newAngle < lowerAngle)
@@ -193,8 +169,7 @@ public class GrahamScan : MonoBehaviour
 
     private void Clear()
     {
-        _lineRenderer.GetComponent<LineRenderer>().positionCount = 0;
+        sceneManagerScript.Clear();
         _pointsListSorted.Clear();
-        Destroy(_centerPoint);
     }
 }
