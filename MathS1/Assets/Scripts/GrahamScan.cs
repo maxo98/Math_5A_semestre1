@@ -6,10 +6,14 @@ public class GrahamScan : MonoBehaviour
     [SerializeField] private SceneManager sceneManagerScript;
     private GameObject _centerPoint;
     private List<GameObject> _pointsListSorted;
-
+    public LinkedList<Vector3> _LinkedPointsList;
     private void Start()
     {
         _pointsListSorted = new List<GameObject>();
+        foreach (var gameObject in _pointsListSorted)
+        {
+            _LinkedPointsList.AddLast(gameObject.transform.position);
+        }
     }
     private void Update()
     {
