@@ -44,6 +44,7 @@ public class TriangulationIncremental : MonoBehaviour
     private void Triangulate()
     {
         var k = 0;
+        
         for (var i = 0; i < 3; i++)
         {
             _vertices.Add(_pointsListSorted[i]);
@@ -51,27 +52,34 @@ public class TriangulationIncremental : MonoBehaviour
             k++;
         }
 
+        var newTriangles = new List<int>();
+
         for (var i = k; i < _pointsListSorted.Count; i++)
         {
             _vertices.Add(_pointsListSorted[i]);
             _trianglesToAdd = new List<int>();
             _verticesCantSee = new List<int>();
-            var newTriangles = new List<int>();
+            
             for (var h = 0; h < _triangles.Count; h += 3)
             {
-                newTriangles.Clear();
+                //newTriangles.Clear();
                 _verticesCanSee = new List<int>();
                 newTriangles.AddRange(CheckCanSeeFromTriangle(_triangles, h, i));
             }
-            // ajout du nouveau vertice pour chaque 2 vertices dans la liste.
-            for (var j = 0; j < newTriangles.Count; j++)
-            {
-                if(j%2 ==0)
-                    _triangles.Add(_vertices.Count - 1);
-                _triangles.Add(newTriangles[j]);
-            }
+
             k++;
         }
+
+        // ajout du nouveau vertice pour chaque 2 vertices dans la liste.
+        for (var j = 0; j < newTriangles.Count; j++)
+        {
+            if(j%2 ==0)
+                _triangles.Add(_vertices.Count - 1);
+
+            //Debug.Log(newTriangles[j] + " " + _vertices.Count);
+            _triangles.Add(newTriangles[j]);
+        }
+
         var trianglesArray = _triangles.ToArray();
         DoubleFaceIndices(ref trianglesArray);
         _mesh.triangles = new int[0];
@@ -92,6 +100,9 @@ public class TriangulationIncremental : MonoBehaviour
             new(triangleIndex + 1, triangleIndex + 2),
             new(triangleIndex + 2, triangleIndex)
         };
+
+        Debug.Log(triangleIndex + " " + _triangles.Count);
+
         var newLines = new List<Tuple<int, int>>
         {
             new(triangleIndex, vertexIndex),
@@ -121,6 +132,7 @@ public class TriangulationIncremental : MonoBehaviour
                 {
                     if (_verticesCantSee.Contains(newItem1)) continue;
                     _verticesCantSee.Add(newItem1);
+                    Debug.Log("2 " + newItem1 + " " + _triangles.Count);
                     if (_verticesCanSee.Contains(newItem1))
                         _verticesCanSee.Remove(newItem1);
                 }

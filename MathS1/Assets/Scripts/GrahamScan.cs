@@ -172,4 +172,80 @@ public class GrahamScan : MonoBehaviour
         sceneManagerScript.Clear();
         _pointsListSorted.Clear();
     }
+
+    /// Join the points along the plane to the halfway point
+    private void JoinPointsAlongPlane(in LinkedList<Vector3> face, out Vector3[] triangles)
+    {
+        //Get the 2d Vectors along the plane sorted in a clockwise polygon point list
+        //And store the indexes of there 3d equivalent in a map
+        Dictionary<Vector2, Vector3> vertexMap;
+
+        LinkedList<Vector2> polygon;
+        ProjectsOnPlane(in face, out polygon, out vertexMap);
+
+        //Decompose the polygon into y-monotones polygons
+        //O(n*Log(n))
+        LinkedList<LinkedList<Vector2>> monotonePolygons;
+        PolygonTriangulation.DecomposeToMonotone(polygon, out monotonePolygons);
+
+        //triangulate the mononotone polygon 
+        //O(n)
+        LinkedList<Vector2> trianglesVec2 = new LinkedList<Vector2>();
+        LinkedListNode<LinkedList<Vector2>> monotonePolygonsListNode;
+
+        for(monotonePolygonsListNode = monotonePolygons.First; monotonePolygonsListNode != null; monotonePolygonsListNode = monotonePolygonsListNode.Next)
+        {
+            PolygonTriangulation.TriangulateMonotonePolygon(monotonePolygonsListNode.Value, ref trianglesVec2);
+        }
+
+        //Turn the 2d triangles into 3d triangles
+        triangles = new Vector3[trianglesVec2.Count];
+        LinkedListNode<Vector2> trianglesVec2Node;
+        int cpt = 0;
+
+        for(trianglesVec2Node = trianglesVec2.First; trianglesVec2Node != null; trianglesVec2Node = trianglesVec2Node.Next, cpt++)
+        {
+            triangles[cpt] = vertexMap[trianglesVec2Node.Value];
+        }
+    }
+
+    //Creates a non crossing polygon from the points along the plane
+    private void ProjectsOnPlane(in LinkedList<Vector3> face, out LinkedList<Vector2> polygon, out Dictionary<Vector2, Vector3> vertexMap)
+    {
+        if(face.Count < 3)
+        {
+            polygon = new LinkedList<Vector2>();
+            vertexMap = new Dictionary<Vector2, Vector3>();
+
+            return;
+        }
+
+        //Projects the 3d vectors on the 2d plane
+        polygon = new LinkedList<Vector2>();
+        Vector3 xAxis = Vector3.one;
+        Vector3 yAxis = Vector3.one;
+        Vector3 planeOrigin = Vector3.zero;//Any point on the plane will do.
+        Vector3 zAxis = new Plane(face.First.Value, face.First.Next.Value, face.First.Next.Next.Value).normal;
+        
+        Vector3.OrthoNormalize(ref zAxis, ref xAxis, ref yAxis);
+
+        vertexMap = new Dictionary<Vector2, Vector3>();
+
+        LinkedListNode<Vector3> faceNode;
+        Vector3 pointZero = face.First.Value;
+
+        for(faceNode = face.First; faceNode != null; faceNode = faceNode.Next)
+        {
+            Vector3 planePos = faceNode.Value - pointZero;
+            Vector2 vec2 = new Vector2(Vector3.Dot(planePos, xAxis), Vector3.Dot(planePos, yAxis));
+
+            //If there's a point duplicate ignore it and everything will be alright, right ?
+            //Probably happens because of the doublesided face, should be removed in the future
+            if(vertexMap.ContainsKey(vec2) == false)
+            {
+                polygon.AddLast(vec2);
+                vertexMap.Add(vec2, faceNode.Value);
+            }
+        }
+    }
 }
