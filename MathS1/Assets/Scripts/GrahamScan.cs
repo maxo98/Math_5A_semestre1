@@ -6,15 +6,16 @@ public class GrahamScan : MonoBehaviour
     [SerializeField] private SceneManager sceneManagerScript;
     private GameObject _centerPoint;
     private List<GameObject> _pointsListSorted;
-    public LinkedList<Vector3> _LinkedPointsList;
+
+    public MeshFilter meshFilter;
+    public MeshRenderer meshRenderer;
+    public Transform meshTransform;
+
     private void Start()
     {
         _pointsListSorted = new List<GameObject>();
-        foreach (var gameObject in _pointsListSorted)
-        {
-            _LinkedPointsList.AddLast(gameObject.transform.position);
-        }
     }
+
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.C))
@@ -38,7 +39,39 @@ public class GrahamScan : MonoBehaviour
             SortPointsByLowerAngle();
             ClearList(_pointsListSorted);
             DrawLineBetweenPoints(_pointsListSorted, Color.blue);
+
             Destroy(_centerPoint);
+        }
+
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+                    LinkedList<Vector3> _LinkedPointsList = new LinkedList<Vector3>();
+
+            foreach (var gameObject in _pointsListSorted)
+            {
+                _LinkedPointsList.AddLast(gameObject.transform.position);
+            }
+
+            Debug.Log(_pointsListSorted.Count);
+
+            Vector3[] triangles;
+            
+            JoinPointsAlongPlane(_LinkedPointsList, out triangles);
+
+            int[] indices = new int[triangles.Length];
+
+            for(int i = 0; i < triangles.Length; i++)
+            {
+                indices[i] = i;
+            }
+
+            
+
+            Delaunay.DoubleFaceIndices(ref indices);
+
+            meshFilter.mesh.triangles = new int[0];
+            meshFilter.mesh.vertices = triangles;
+            meshFilter.mesh.triangles = indices;
         }
     }
 
