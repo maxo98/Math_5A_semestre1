@@ -74,8 +74,9 @@ public class TriangulationIncremental : MonoBehaviour
         }
         var trianglesArray = _triangles.ToArray();
         DoubleFaceIndices(ref trianglesArray);
-        _mesh.triangles = trianglesArray;
+        _mesh.triangles = new int[0];
         _mesh.vertices = _vertices.ToArray();
+        _mesh.triangles = trianglesArray;
     }
     
     // ajoute les 2*x vertices pour former un triangle avec le nouveau point
