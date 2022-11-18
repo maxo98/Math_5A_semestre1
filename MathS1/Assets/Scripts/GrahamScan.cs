@@ -5,7 +5,7 @@ public class GrahamScan : MonoBehaviour
 {
     [SerializeField] private SceneManager sceneManagerScript;
     private GameObject _centerPoint;
-    private List<GameObject> _pointsListSorted;
+    public List<GameObject> _pointsListSorted;
 
     private void Start()
     {
@@ -20,11 +20,7 @@ public class GrahamScan : MonoBehaviour
         
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            _pointsListSorted.Clear();
-            InitCenterPoint();
-            SortPointsByLowerAngle();
-            DrawLineBetweenPoints(_pointsListSorted, Color.cyan);
-            Destroy(_centerPoint);
+            UseScan();
         }
 
         if (Input.GetKeyDown(KeyCode.T))
@@ -36,6 +32,15 @@ public class GrahamScan : MonoBehaviour
             DrawLineBetweenPoints(_pointsListSorted, Color.blue);
             Destroy(_centerPoint);
         }
+    }
+
+    public void UseScan()
+    {
+        _pointsListSorted.Clear();
+        InitCenterPoint();
+        SortPointsByLowerAngle();
+        DrawLineBetweenPoints(_pointsListSorted, Color.cyan);
+        Destroy(_centerPoint);
     }
 
     private float GetAngle(Vector3 from, Vector3 common, Vector3 to)
