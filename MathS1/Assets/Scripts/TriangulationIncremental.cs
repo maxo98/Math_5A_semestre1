@@ -44,6 +44,7 @@ public class TriangulationIncremental : MonoBehaviour
     private void Triangulate()
     {
         var k = 0;
+        
         for (var i = 0; i < 3; i++)
         {
             _vertices.Add(_pointsListSorted[i]);
@@ -51,47 +52,64 @@ public class TriangulationIncremental : MonoBehaviour
             k++;
         }
 
+        var newTriangles = new List<int>();
+
         for (var i = k; i < _pointsListSorted.Count; i++)
         {
             _vertices.Add(_pointsListSorted[i]);
             _trianglesToAdd = new List<int>();
             _verticesCantSee = new List<int>();
-            var newTriangles = new List<int>();
+            
             for (var h = 0; h < _triangles.Count; h += 3)
             {
+                //newTriangles.Clear();
                 _verticesCanSee = new List<int>();
                 newTriangles.AddRange(CheckCanSeeFromTriangle(_triangles, h, i));
-                
             }
-            for (var j = 0; j < newTriangles.Count; j++)
-            {
-                if(j%2 ==0)
-                    _trianglesToAdd.Add(_vertices.Count - 1);
-                _trianglesToAdd.Add(newTriangles[j]);
-            }
-            
-            _triangles.AddRange(_trianglesToAdd);
+
             k++;
         }
+
+        // ajout du nouveau vertice pour chaque 2 vertices dans la liste.
+        for (var j = 0; j < newTriangles.Count; j++)
+        {
+            if(j%2 ==0)
+                _triangles.Add(_vertices.Count - 1);
+
+            //Debug.Log(newTriangles[j] + " " + _vertices.Count);
+            _triangles.Add(newTriangles[j]);
+        }
+
         var trianglesArray = _triangles.ToArray();
         DoubleFaceIndices(ref trianglesArray);
-        _mesh.triangles = trianglesArray;
+        _mesh.triangles = new int[0];
         _mesh.vertices = _vertices.ToArray();
+        _mesh.triangles = trianglesArray;
     }
-
+    
+    // ajoute les 2*x vertices pour former un triangle avec le nouveau point
     private IEnumerable<int> CheckCanSeeFromTriangle(IReadOnlyList<int> triangles, int triangleIndex, int vertexIndex)
     {
         var newTriangles = new List<int>();
+        if (triangles[triangleIndex] >= _vertices.Count)
+            return newTriangles;
+        
         var lines = new List<Tuple<int, int>>
         {
             new(triangleIndex, triangleIndex + 1),
             new(triangleIndex + 1, triangleIndex + 2),
-            new(triangleIndex + 2, triangleIndex),
+            new(triangleIndex + 2, triangleIndex)
+        };
+
+        Debug.Log(triangleIndex + " " + _triangles.Count);
+
+        var newLines = new List<Tuple<int, int>>
+        {
             new(triangleIndex, vertexIndex),
             new(triangleIndex + 1, vertexIndex),
-            new(triangleIndex = 2, vertexIndex)
+            new(triangleIndex + 2, vertexIndex)
         };
-        var middleIntersects = new List<bool>();
+        
         for (var l = 0; l < 3; l++)
         {
             if (_vertices[triangles[triangleIndex + l]].Equals(_pointsListSorted[vertexIndex]))
@@ -100,39 +118,67 @@ public class TriangulationIncremental : MonoBehaviour
             }
         }
 
-        var i = 0;
-        foreach (var (item1, item2) in lines)
+        foreach (var (newItem1, newItem2) in newLines)
         {
-            if (i < 3)
+            foreach (var (item1, item2) in lines)
             {
-                var middlePoint = (_vertices[triangles[item1]] + _vertices[triangles[item2]]) / 2;
-                var vertex1 = _vertices[triangles[item1]];
-                var vertex2 = _vertices[triangles[item2]];
-                var j = 0;
-                var newLineIsIntersecting = false;
-                var middleIsIntersecting = false;
-                foreach (var (secondItem1, secondItem2) in lines)
+                if (newItem1 == item1 || newItem1 == item2)
                 {
-                    if(j < 3)
-                        middleIsIntersecting = DoIntersect(middlePoint, _vertices[vertexIndex], _vertices[triangles[secondItem1]], _vertices[triangles[secondItem2]]);
-                    else
-                    {
-                        var secondVertex1 = _vertices[triangles[secondItem1]];
-                        var secondVertex2 = _vertices[triangles[secondItem2]];
-                        newLineIsIntersecting = DoIntersect(_vertices[secondItem1], _vertices[secondItem2], 
-                            _vertices[triangles[item1]], _vertices[triangles[item2]]);
-                    }
-                    j++;
+                    continue;
                 }
-                
+                //collision entre le segment vertice / new vertice et les autres coté du triangle
+                if (DoIntersect(_vertices[_triangles[newItem1]], _pointsListSorted[newItem2],
+                        _vertices[_triangles[item1]], _vertices[_triangles[item2]]))
+                {
+                    if (_verticesCantSee.Contains(newItem1)) continue;
+                    _verticesCantSee.Add(newItem1);
+                    Debug.Log("2 " + newItem1 + " " + _triangles.Count);
+                    if (_verticesCanSee.Contains(newItem1))
+                        _verticesCanSee.Remove(newItem1);
+                }
+                else
+                {
+                    if(!_verticesCantSee.Contains(newItem1) && !_verticesCanSee.Contains(newItem1))
+                        _verticesCanSee.Add(newItem1);
+                }
             }
-            else
-            {
-                
-            }
-            i++;
         }
-        
+
+        if (_verticesCanSee.Count <= 2)
+        {
+            if(_verticesCanSee.Count == 2)
+                newTriangles.AddRange(_verticesCanSee);
+            return newTriangles;
+        }
+
+        for (var i = 0; i < _verticesCanSee.Count; i++)
+        {
+            int vertex1, vertex2;
+            switch (i)
+            {
+                case 0:
+                    vertex1 = 1;
+                    vertex2 = 2;
+                    break;
+                case 1:
+                    vertex1 = 2;
+                    vertex2 = 0;
+                    break;
+                default:
+                    vertex1 = 0;
+                    vertex2 = 1;
+                    break;
+            }
+            // collision avec le milieu d'un segment
+            if (!DoIntersect(_vertices[_triangles[i]] + _vertices[_triangles[vertex1]], _pointsListSorted[vertexIndex],
+                    _vertices[_triangles[_triangles[i]]], _vertices[_triangles[vertex2]]) && 
+                !DoIntersect(_vertices[_triangles[i]] + _vertices[_triangles[vertex1]], _pointsListSorted[vertexIndex],
+                    _vertices[_triangles[_triangles[vertex1]]], _vertices[_triangles[vertex2]]))
+            {
+                newTriangles.Add(_verticesCanSee[i]);
+                newTriangles.Add(_verticesCanSee[vertex1]);
+            }
+        }
         return newTriangles;
     }
 

@@ -1,0 +1,14 @@
+CreateArc -
+GetActiveArcForXCoord -
+CreateEdge - 
+AddArcToBeachline
+RemoveArcFromBeachline
+FinishEdge
+GetFirstLeafOnTheLeft
+GetFirstLeafOnTheRight
+GetFirstParentOnTheRight
+GetFirstParentOnTheLeft
+GetEdgeArcIntersectionPoint
+isFinite
+VerifyThatThereAreNoReferencesToItem
+AddArcSqueezeEvent
