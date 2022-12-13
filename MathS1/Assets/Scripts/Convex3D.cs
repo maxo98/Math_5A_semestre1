@@ -1,12 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using MathNet.Numerics;
-using MathNet.Numerics.LinearAlgebra;
 
+[ExecuteInEditMode]
 public class Convex3D : MonoBehaviour
 {
-
     public MeshFilter meshFilter;
     public MeshRenderer meshRenderer;
     public Transform meshTransform;
@@ -14,6 +12,7 @@ public class Convex3D : MonoBehaviour
     public Transform pointToAdd;
 
     public Transform sphere;
+
 
     // Start is called before the first frame update
     void Start()
@@ -29,10 +28,11 @@ public class Convex3D : MonoBehaviour
         vertices[1] = new Vector3(0, 1, 0);
         vertices[2] = new Vector3(1, 1, 0);
         vertices[3] = new Vector3(1, 0, 1);
-
-        meshFilter.mesh.SetVertices(vertices);
-        meshFilter.mesh.SetIndices(indices, MeshTopology.Triangles, 0);
-
+        
+        meshFilter.sharedMesh.SetVertices(vertices);
+        meshFilter.sharedMesh.SetIndices(indices, MeshTopology.Triangles, 0);
+        // meshFilter.mesh.SetVertices(vertices);
+        // meshFilter.mesh.SetIndices(indices, MeshTopology.Triangles, 0);
         Vector3 center;
 
         Debug.Log(GetSphereCenter(vertices[0], vertices[1], vertices[2], vertices[3], out center));
@@ -48,10 +48,12 @@ public class Convex3D : MonoBehaviour
         //Vector3 point = pointToAdd.position;
 
         Dictionary<(int, int), int> segementColors = new Dictionary<(int, int), int>();
+        
+        List<int> triangles = new List<int>(meshFilter.sharedMesh.triangles);
+        List<Vector3> vertices = new List<Vector3>(meshFilter.sharedMesh.vertices);
 
-        List<int> triangles = new List<int>(meshFilter.mesh.triangles);
-        //triangles.RemoveRange(meshFilter.mesh.triangles.Length/2, meshFilter.mesh.triangles.Length/2);
-        List<Vector3> vertices = new List<Vector3>(meshFilter.mesh.vertices);
+        // List<int> triangles = new List<int>(meshFilter.mesh.triangles);
+        // List<Vector3> vertices = new List<Vector3>(meshFilter.mesh.vertices);
 
         for(int i = 0; i < triangles.Count; i+=3)
         {
@@ -93,9 +95,11 @@ public class Convex3D : MonoBehaviour
         vertices.Add(point);
 
         int[] triangleArray = triangles.ToArray();
-
-        meshFilter.mesh.SetVertices(vertices.ToArray());
-        meshFilter.mesh.SetIndices(triangleArray, MeshTopology.Triangles, 0);
+        
+        meshFilter.sharedMesh.SetVertices(vertices.ToArray());
+        meshFilter.sharedMesh.SetIndices(triangleArray, MeshTopology.Triangles, 0);
+        // meshFilter.mesh.SetVertices(vertices.ToArray());
+        // meshFilter.mesh.SetIndices(triangleArray, MeshTopology.Triangles, 0);
     }
 
 
