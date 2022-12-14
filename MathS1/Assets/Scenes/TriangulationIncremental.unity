@@ -298,7 +298,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sceneManagerScript: {fileID: 780071912}
   meshFilter: {fileID: 509420090}
-  meshRenderer: {fileID: 509420089}
 --- !u!114 &780071916
 MonoBehaviour:
   m_ObjectHideFlags: 0
