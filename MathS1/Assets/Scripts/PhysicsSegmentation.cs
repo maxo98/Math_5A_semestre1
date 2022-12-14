@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Collections;
+using System;
 
 public class PhysicsSegmentation : MonoBehaviour
 {
@@ -20,7 +21,7 @@ public class PhysicsSegmentation : MonoBehaviour
         }
 
         Mesh tmp = new Mesh();
-        skinMesh.BakeMesh(tmp);
+        skinMesh.BakeMesh(tmp, true);
         mesh = skinMesh.sharedMesh;
         Vector3[] vert = tmp.vertices;
 
@@ -40,14 +41,17 @@ public class PhysicsSegmentation : MonoBehaviour
         // Iterate over the vertices
         for (int vertIndex = 0; vertIndex < mesh.vertexCount; vertIndex++)
         {
-            float totalWeight = 0f;
             int numberOfBonesForThisVertex = bonesPerVertex[vertIndex];
 
             // For each vertex, iterate over its BoneWeights
             for (int i = 0; i < numberOfBonesForThisVertex; i++)
             {
                 int index = boneWeights[boneWeightIndex].boneIndex;
-                bonesVertices[index].Add(vertIndex);
+                
+                //if(boneWeights[boneWeightIndex].weight > 0.3)
+                //{
+                    bonesVertices[index].Add(vertIndex);
+                //}
 
                 boneWeightIndex++;
             }
@@ -59,20 +63,53 @@ public class PhysicsSegmentation : MonoBehaviour
 
             //Get barycenter
             Vector3 center = Vector3.zero;
+            List<Vector3> localVert = new List<Vector3>();
+            Vector3 min = Vector3.positiveInfinity, max = Vector3.negativeInfinity;
 
             for(int cpt = 0; cpt < bonesVertices[i].Count; cpt++)
             {
-                center += vert[bonesVertices[i][cpt]];
+
+                localVert.Add(skinMesh.bones[i].InverseTransformPoint(transform.TransformPoint(vert[bonesVertices[i][cpt]])));
+
+                if(localVert[localVert.Count-1].x < min.x)
+                {
+                    min.x = localVert[localVert.Count-1].x;
+                }else if(localVert[localVert.Count-1].x > max.x)
+                {
+                    max.x = localVert[localVert.Count-1].x;
+                }
+
+                if(localVert[localVert.Count-1].y < min.y)
+                {
+                    min.y = localVert[localVert.Count-1].y;
+                }else if(localVert[localVert.Count-1].y > max.y)
+                {
+                    max.y = localVert[localVert.Count-1].y;
+                }
+
+                if(localVert[localVert.Count-1].z < min.z)
+                {
+                    min.z = localVert[localVert.Count-1].z;
+                }else if(localVert[localVert.Count-1].z > max.z)
+                {
+                    max.z = localVert[localVert.Count-1].z;
+                }
             }
 
-            center = new Vector3(center.x/bonesVertices[i].Count, center.y/bonesVertices[i].Count, center.z/bonesVertices[i].Count);
+            center = new Vector3((max.x+min.x)/2, (max.y+min.y)/2, (max.z+min.z)/2);
+            Vector3 size = new Vector3(max.x-min.x, max.y-min.y, max.z-min.z);
+
+            // BoxCollider boxColl = skinMesh.bones[i].gameObject.AddComponent(typeof(BoxCollider)) as BoxCollider;
+
+            // boxColl.center = center;
+            // boxColl.size = size;
 
             //Sphere
             float maxDist = 0;
 
-            for(int cpt = 0; cpt < bonesVertices[i].Count; cpt++)
+            for(int cpt = 0; cpt < localVert.Count; cpt++)
             {
-                float dist = (vert[bonesVertices[i][cpt]] - center).sqrMagnitude;
+                float dist = (localVert[cpt] - center).sqrMagnitude;
                 
                 if(dist > maxDist)
                 {
@@ -80,16 +117,62 @@ public class PhysicsSegmentation : MonoBehaviour
                 }
             }
 
-            maxDist = Mathf.Sqrt(maxDist) * 2;
+            maxDist = Mathf.Sqrt(maxDist);
 
-            SphereCollider sc = skinMesh.bones[i].gameObject.AddComponent(typeof(SphereCollider)) as SphereCollider;
+            // SphereCollider sc = skinMesh.bones[i].gameObject.AddComponent(typeof(SphereCollider)) as SphereCollider;
 
-            center = skinMesh.bones[i].InverseTransformPoint(center);
+            // sc.center = center;
+            // sc.radius = maxDist;
 
-            sc.center = new Vector3(center.x/skinMesh.bones[i].lossyScale.x, center.y/skinMesh.bones[i].lossyScale.y, center.z/skinMesh.bones[i].lossyScale.z);
-            sc.radius = (maxDist/skinMesh.bones[i].lossyScale.x) /2;
+            //Capsule
+            float cylMaxY = 0;
+            float cylMinY = 0;
+            float radius = 0.001f;
 
-            //Cylinder
+            for(int cpt = 0; cpt < bonesVertices[i].Count; cpt++)
+            {
+                float newRadius = Mathf.Sqrt(localVert[cpt].x * localVert[cpt].x + localVert[cpt].z * localVert[cpt].z);
+
+                if(radius < newRadius)
+                {
+                    radius = newRadius;
+                }
+            }
+
+            for(int cpt = 0; cpt < bonesVertices[i].Count; cpt++)
+            {
+                if(cylMaxY < localVert[cpt].y)
+                {
+                    float newRadius = (localVert[cpt] - new Vector3(0, cylMaxY, 0)).magnitude;
+
+                    if(newRadius > radius)
+                    {
+                        cylMaxY += (newRadius - radius);
+                    }
+
+                }else if(cylMinY > localVert[cpt].y)
+                {
+                    float newRadius = (localVert[cpt] - new Vector3(0, cylMinY, 0)).magnitude;
+
+                    if(newRadius > radius)
+                    {
+                        cylMinY -= (newRadius - radius);
+                    }
+                }
+            }
+
+            //radius = Mathf.Sqrt(radius);
+
+            float height = (cylMaxY - cylMinY) + radius;
+            Debug.Log(cylMinY);
+
+            CapsuleCollider capsule = skinMesh.bones[i].gameObject.AddComponent(typeof(CapsuleCollider)) as CapsuleCollider;
+
+            capsule.height = height;
+            capsule.center = new Vector3(0, (cylMaxY + cylMinY)/2, 0);
+            capsule.direction = 1;//y
+            
+            capsule.radius = radius;
 
         }
     }
