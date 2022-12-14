@@ -19,19 +19,25 @@ namespace EditorScripts
         
             if (GUILayout.Button("Reset Mesh"))
             {
-                Vector3[] vertices = new Vector3[4];
-                int[] indices = new int[3*4]{0,1,2, 1,3,2, 0,2,3, 0,3,1};//Need to always swap between clockwise and counterclockwise index
+                var vertices = new Vector3[4];
+                var indices = new int[3*4]{0,1,2, 1,3,2, 0,2,3, 0,3,1};//Need to always swap between clockwise and counterclockwise index
 
                 vertices[0] = new Vector3(1, 0, 0);
                 vertices[1] = new Vector3(0, 1, 0);
                 vertices[2] = new Vector3(1, 1, 0);
                 vertices[3] = new Vector3(1, 0, 1);
         
-                int[] tmp = new int[0];
+                var tmp = Array.Empty<int>();
                 convex3D.meshFilter.sharedMesh.SetIndices(tmp, MeshTopology.Triangles, 0);
                 
                 convex3D.meshFilter.sharedMesh.SetVertices(vertices);
                 convex3D.meshFilter.sharedMesh.SetIndices(indices, MeshTopology.Triangles, 0);
+
+                convex3D.GetSphereCenter(vertices[0], vertices[1], vertices[2], vertices[3], out var center);
+
+                convex3D.sphere.localPosition = center;
+                var radius = Vector3.Distance(vertices[0], center) * 2;
+                convex3D.sphere.localScale = new Vector3(radius, radius, radius);
             }
             
             convex3D.meshFilter = (MeshFilter)EditorGUILayout.ObjectField("Mesh filter", convex3D.meshFilter, typeof(MeshFilter), true);
