@@ -10,6 +10,12 @@ public class PhysicsSegmentation : MonoBehaviour
     public SkinnedMeshRenderer skinMesh;
     Mesh mesh;
 
+    public bool allowBox = true;
+    public bool allowSphere = true;
+    public bool allowCapsule = true;
+
+    public float capsuleMinHeight = 0;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -61,16 +67,26 @@ public class PhysicsSegmentation : MonoBehaviour
         {
             if(bonesVertices[i].Count == 0) continue;
 
-            //Get barycenter
-            Vector3 center = Vector3.zero;
             List<Vector3> localVert = new List<Vector3>();
+
+            //Box and sphere
+            Vector3 center = Vector3.zero;
             Vector3 min = Vector3.positiveInfinity, max = Vector3.negativeInfinity;
+
+            //Capsule
+            float cylMaxY = 0;
+            float cylMinY = 0;
+            float radius = 0f;
+
+            //Sphere
+            float maxDist = 0;
 
             for(int cpt = 0; cpt < bonesVertices[i].Count; cpt++)
             {
 
                 localVert.Add(skinMesh.bones[i].InverseTransformPoint(transform.TransformPoint(vert[bonesVertices[i][cpt]])));
 
+                //Box
                 if(localVert[localVert.Count-1].x < min.x)
                 {
                     min.x = localVert[localVert.Count-1].x;
@@ -94,43 +110,8 @@ public class PhysicsSegmentation : MonoBehaviour
                 {
                     max.z = localVert[localVert.Count-1].z;
                 }
-            }
 
-            center = new Vector3((max.x+min.x)/2, (max.y+min.y)/2, (max.z+min.z)/2);
-            Vector3 size = new Vector3(max.x-min.x, max.y-min.y, max.z-min.z);
-
-            // BoxCollider boxColl = skinMesh.bones[i].gameObject.AddComponent(typeof(BoxCollider)) as BoxCollider;
-
-            // boxColl.center = center;
-            // boxColl.size = size;
-
-            //Sphere
-            float maxDist = 0;
-
-            for(int cpt = 0; cpt < localVert.Count; cpt++)
-            {
-                float dist = (localVert[cpt] - center).sqrMagnitude;
-                
-                if(dist > maxDist)
-                {
-                    maxDist = dist;
-                }
-            }
-
-            maxDist = Mathf.Sqrt(maxDist);
-
-            // SphereCollider sc = skinMesh.bones[i].gameObject.AddComponent(typeof(SphereCollider)) as SphereCollider;
-
-            // sc.center = center;
-            // sc.radius = maxDist;
-
-            //Capsule
-            float cylMaxY = 0;
-            float cylMinY = 0;
-            float radius = 0.001f;
-
-            for(int cpt = 0; cpt < bonesVertices[i].Count; cpt++)
-            {
+                //Capsule part 1
                 float newRadius = Mathf.Sqrt(localVert[cpt].x * localVert[cpt].x + localVert[cpt].z * localVert[cpt].z);
 
                 if(radius < newRadius)
@@ -141,6 +122,15 @@ public class PhysicsSegmentation : MonoBehaviour
 
             for(int cpt = 0; cpt < bonesVertices[i].Count; cpt++)
             {
+                //Sphere
+                float dist = (localVert[cpt] - center).sqrMagnitude;
+                
+                if(dist > maxDist)
+                {
+                    maxDist = dist;
+                }
+
+                //Capsule part 2
                 if(cylMaxY < localVert[cpt].y)
                 {
                     float newRadius = (localVert[cpt] - new Vector3(0, cylMaxY, 0)).magnitude;
@@ -161,19 +151,50 @@ public class PhysicsSegmentation : MonoBehaviour
                 }
             }
 
-            //radius = Mathf.Sqrt(radius);
+            //Box
+            center = new Vector3((max.x+min.x)/2, (max.y+min.y)/2, (max.z+min.z)/2);
+            Vector3 size = new Vector3(max.x-min.x, max.y-min.y, max.z-min.z);
 
-            float height = (cylMaxY - cylMinY) + radius;
-            Debug.Log(cylMinY);
+            //Sphere
+            maxDist = Mathf.Sqrt(maxDist);
 
-            CapsuleCollider capsule = skinMesh.bones[i].gameObject.AddComponent(typeof(CapsuleCollider)) as CapsuleCollider;
+            float volumeSphere = 4/3*Mathf.PI*maxDist*maxDist*maxDist;
+            float volumeBox = size.x * size.y * size.z;
+            float volumeCapsule = Mathf.PI*radius*radius*(cylMaxY - cylMinY) + 4/3*Mathf.PI*radius*radius*radius;
 
-            capsule.height = height;
-            capsule.center = new Vector3(0, (cylMaxY + cylMinY)/2, 0);
-            capsule.direction = 1;//y
-            
-            capsule.radius = radius;
+            if((volumeCapsule < volumeBox || allowBox == false)
+             && ((volumeCapsule < volumeSphere && (cylMaxY - cylMinY) > (capsuleMinHeight / skinMesh.bones[i].lossyScale.y)) || allowSphere == false) && allowCapsule == true)//Capsule
+            {
+                Debug.Log("Capsule");
 
+                float height = (cylMaxY - cylMinY) + radius;
+
+                CapsuleCollider capsule = skinMesh.bones[i].gameObject.AddComponent(typeof(CapsuleCollider)) as CapsuleCollider;
+
+                capsule.height = height;
+                capsule.center = new Vector3(0, (cylMaxY + cylMinY)/2, 0);
+                capsule.direction = 1;//y
+                
+                capsule.radius = radius;
+
+            }else if((volumeSphere < volumeBox || allowBox == false) && allowSphere == true)//Sphere
+            {
+
+                Debug.Log("Sphere");
+
+                SphereCollider sc = skinMesh.bones[i].gameObject.AddComponent(typeof(SphereCollider)) as SphereCollider;
+
+                sc.center = center;
+                sc.radius = maxDist;
+
+            }else if(allowBox == true){//Box
+
+                BoxCollider boxColl = skinMesh.bones[i].gameObject.AddComponent(typeof(BoxCollider)) as BoxCollider;
+
+                boxColl.center = center;
+                boxColl.size = size;
+
+            }
         }
     }
 }

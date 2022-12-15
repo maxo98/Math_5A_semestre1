@@ -203,6 +203,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skinMesh: {fileID: 116725231}
+  allowBox: 1
+  allowSphere: 1
+  allowCapsule: 1
+  capsuleMinHeight: 0.1
 --- !u!1 &495953768
 GameObject:
   m_ObjectHideFlags: 0
@@ -235,6 +239,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skinMesh: {fileID: 572074127}
+  allowBox: 1
+  allowSphere: 1
+  allowCapsule: 1
+  capsuleMinHeight: 0
 --- !u!23 &495953770
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -570,6 +578,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skinMesh: {fileID: 572074127}
+  allowBox: 1
+  allowSphere: 1
+  allowCapsule: 1
+  capsuleMinHeight: 0
 --- !u!1 &2091739229
 GameObject:
   m_ObjectHideFlags: 0
@@ -667,3 +679,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skinMesh: {fileID: 0}
+  allowBox: 1
+  allowSphere: 1
+  allowCapsule: 1
+  capsuleMinHeight: 0
