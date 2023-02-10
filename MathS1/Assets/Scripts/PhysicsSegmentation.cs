@@ -54,10 +54,10 @@ public class PhysicsSegmentation : MonoBehaviour
             {
                 int index = boneWeights[boneWeightIndex].boneIndex;
                 
-                //if(boneWeights[boneWeightIndex].weight > 0.3)
-                //{
+                if(boneWeights[boneWeightIndex].weight > 0.05)
+                {
                     bonesVertices[index].Add(vertIndex);
-                //}
+                }
 
                 boneWeightIndex++;
             }
