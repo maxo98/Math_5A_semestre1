@@ -16,13 +16,12 @@ public class Segmentation : MonoBehaviour
     public GameObject point;
     public Transform meshTransform;
 
-    private IntPtr _hyperneatInstance;
-    private IntPtr _hyperneatParamsInstance;
     private IntPtr _dataSetInstance;
+    private IntPtr _genomeInstance;
+    private IntPtr _networkInstance;
+
     
     private List<Tuple<Vector3, List<bool>>> _bones;
-
-    private IntPtr _neatParamsInstance;
 
     // Start is called before the first frame update
     void Start()
@@ -93,11 +92,6 @@ public class Segmentation : MonoBehaviour
             GameObject obj = Instantiate(point, meshTransform.TransformPoint(vert[bonesVertices[0][cpt]]), Quaternion.identity);
             obj.transform.localScale = new Vector3(20f, 20f, 20f);
         }
-        
-        _neatParamsInstance = CreateNeatParamInstance();
-        _hyperneatParamsInstance = CreateHyperNeatParamInstance();
-        _hyperneatInstance =
-            CreateHyperNeatInstance(bonesVertices.Count, _neatParamsInstance, _hyperneatParamsInstance);
 
         _dataSetInstance = InitDataSet(skinMesh.bones.Length);
         
@@ -113,6 +107,15 @@ public class Segmentation : MonoBehaviour
 
             SetNewVertex(_dataSetInstance, positionConvertedToArray, 3, pair.Item2.ToArray(), pair.Item2.Count);
         }
+
+        _genomeInstance = CreateGenome(4, skinMesh.bones.Length, 2, 8);
+        _networkInstance = CreateNeuralNetwork(_genomeInstance);
+
+        Train(_dataSetInstance, _networkInstance, 100, 0.1f);
+
+        ApplyBackProp(_genomeInstance, _networkInstance);
+
+        SaveGenome(_genomeInstance);
     }
 
     // Update is called once per frame
@@ -123,14 +126,8 @@ public class Segmentation : MonoBehaviour
 
     private void OnDestroy()
     {
-        DeleteInstance(_hyperneatInstance);
-        DeleteInstance(_hyperneatParamsInstance);
-        DeleteInstance(_neatParamsInstance);
         DeleteInstance(_dataSetInstance);
     }
-
-    [DllImport("machine learning algo")]
-    static extern void ApplyBackProp(IntPtr hyperneatInstance);
 
     [DllImport("machine learning algo")]
     static extern IntPtr InitDataSet(int boneSize);
@@ -143,13 +140,19 @@ public class Segmentation : MonoBehaviour
  
     [DllImport("machine learning algo")]
     static extern void DeleteArrayInstance(IntPtr arrayInstance);
-    
+
     [DllImport("machine learning algo")]
-    static extern IntPtr CreateHyperNeatInstance(int popSize, IntPtr instanceNeatParams, IntPtr instanceHyperneatParams);
-    
+    static extern void Train(IntPtr dataset, IntPtr network, int epoch, float lr);
+
     [DllImport("machine learning algo")]
-    static extern IntPtr CreateNeatParamInstance();
-    
+    static extern IntPtr CreateNeuralNetwork(IntPtr gen);
+
     [DllImport("machine learning algo")]
-    static extern IntPtr CreateHyperNeatParamInstance();
+    static extern IntPtr CreateGenome(int input, int output, int layer, int node);
+
+    [DllImport("machine learning algo")]
+    static extern void SaveGenome(IntPtr gen);
+
+    [DllImport("machine learning algo")]
+    static extern void ApplyBackProp(IntPtr gen, IntPtr network);
 }
