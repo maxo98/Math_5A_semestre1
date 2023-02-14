@@ -1,23 +1,23 @@
 ﻿  dllmain.cpp
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Activation.h(50,74): warning C4244: 'return' : conversion de 'int' en 'float', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Activation.h(68,74): warning C4244: 'return' : conversion de 'int' en 'float', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Activation.h(93,74): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Activation.h(109,67): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Activation.h(129,99): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Activation.h(138,100): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Activation.h(145,77): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Activation.h(155,74): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Utils.h(20,52): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Genome.h(167,39): warning C4244: 'argument' : conversion de 'const __int64' en 'unsigned int', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\NeuralNetwork.h(23,37): warning C4267: 'return' : conversion de 'size_t' en 'unsigned int', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\NeuralNetwork.h(25,38): warning C4267: 'return' : conversion de 'size_t' en 'unsigned int', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\NeuralNetwork.h(26,39): warning C4267: 'return' : conversion de 'size_t' en 'unsigned int', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\Neat.h(90,33): warning C4267: 'return' : conversion de 'size_t' en 'int', perte possible de données
-C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\dllmain.cpp(67,54): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
-     Création de la bibliothèque C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\x64\Release\machine learning algo.lib et de l'objet C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\x64\Release\machine learning algo.exp
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Activation.h(50,74): warning C4244: 'return' : conversion de 'int' en 'float', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Activation.h(68,74): warning C4244: 'return' : conversion de 'int' en 'float', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Activation.h(93,74): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Activation.h(109,67): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Activation.h(129,99): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Activation.h(138,100): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Activation.h(145,77): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Activation.h(155,74): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Utils.h(20,52): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Genome.h(167,39): warning C4244: 'argument' : conversion de 'const __int64' en 'unsigned int', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\NeuralNetwork.h(23,37): warning C4267: 'return' : conversion de 'size_t' en 'unsigned int', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\NeuralNetwork.h(25,38): warning C4267: 'return' : conversion de 'size_t' en 'unsigned int', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\NeuralNetwork.h(26,39): warning C4267: 'return' : conversion de 'size_t' en 'unsigned int', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Neat.h(90,33): warning C4267: 'return' : conversion de 'size_t' en 'int', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\dllmain.cpp(68,54): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+     Création de la bibliothèque C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\x64\Release\machine learning algo.lib et de l'objet C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\x64\Release\machine learning algo.exp
   Génération de code en cours
-  647 of 1757 functions (36.8%) were compiled, the rest were copied from previous compilation.
-    1 functions were new in current compilation
-    84 functions had inline decision re-evaluated but remain unchanged
+  27 of 1758 functions ( 1.5%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    9 functions had inline decision re-evaluated but remain unchanged
   Fin de la génération du code
-  machine learning algo.vcxproj -> C:\Users\bossC\Documents\Cedric\UnityProjects\Math_5A_semestre1\machine learning algo\x64\Release\machine learning algo.dll
+  machine learning algo.vcxproj -> C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\x64\Release\machine learning algo.dll

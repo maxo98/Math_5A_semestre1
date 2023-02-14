@@ -85,8 +85,6 @@ public class Segmentation : MonoBehaviour
             _bones.Add(newTuple);
         }
 
-        Debug.Log(bonesVertices[0].Count);
-
         for(int cpt = 0; cpt < bonesVertices[0].Count; cpt++)
         {
             GameObject obj = Instantiate(point, meshTransform.TransformPoint(vert[bonesVertices[0][cpt]]), Quaternion.identity);
@@ -116,6 +114,19 @@ public class Segmentation : MonoBehaviour
         ApplyBackProp(_genomeInstance, _networkInstance);
 
         SaveGenome(_genomeInstance);
+
+        var pairBis = _bones[0];
+        float[] convertToArray = new float[3];
+
+        for (int i = 0; i < 3; i++)
+        {
+            convertToArray[i] = pairBis.Item1[i];
+        }
+        
+        if (Evaluate(_genomeInstance, _networkInstance, convertToArray, 3))
+            Debug.Log("compute was a success");
+        else
+            Debug.Log("compute was a failed");
     }
 
     // Update is called once per frame
@@ -155,4 +166,7 @@ public class Segmentation : MonoBehaviour
 
     [DllImport("machine learning algo")]
     static extern void ApplyBackProp(IntPtr gen, IntPtr network);
+
+    [DllImport("machine learning algo")]
+    static extern bool Evaluate(IntPtr dataset, IntPtr network, float[] inputRaw, int inputLength);
 }

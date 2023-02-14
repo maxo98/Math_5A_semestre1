@@ -35,6 +35,7 @@ extern "C"
 	DLL_EXPORT void DeleteInstance(void* instance);
 	DLL_EXPORT void ApplyBackProp(Genome* gen, NeuralNetwork* network);
 	DLL_EXPORT void SaveGenome(Genome* gen);
+	DLL_EXPORT bool Evaluate(DataSet* dataset, NeuralNetwork* network, float* inputRaw, int inputLength);
 	DLL_EXPORT Genome* CreateGenome(int input, int output, int layer, int node);
 	DLL_EXPORT NeuralNetwork* CreateNeuralNetwork(Genome* gen);
 	DLL_EXPORT void Train(DataSet* dataset, NeuralNetwork* network, int epoch, float lr);
@@ -68,6 +69,37 @@ void Train(DataSet* dataset, NeuralNetwork* network, int epoch, float lr)
 
 		network->backprop(dataset->vertices[index].first, dataset->vertices[index].second, lr);
 	}
+}
+
+bool Evaluate(DataSet* dataset, NeuralNetwork* network, float* inputRaw, int inputLength)
+{
+	std::vector<float> input = wrapperArrayToVector<float>(inputRaw, inputLength);
+	std::vector<float> output = std::vector<float>(dataset->bones);
+	std::vector<float> resultExpectedFromDataSet;
+
+	network->compute(input, output);
+
+	//for (const auto vertexData : dataset->vertices)
+	//{
+	//	//if (std::equal(input.begin(), input.end(), vertexData.first.begin()))
+	//	//{
+	//	//	return true;
+	//	//	resultExpectedFromDataSet = vertexData.second;
+	//	//	break;
+	//	//}
+	//}
+
+	return false;
+
+	//for (int i = 0; i < output.size(); i++)
+	//{
+	//	if (output[i] < 0)
+	//		output[i] = 0;
+	//	else
+	//		output[i] = 1;
+	//}
+
+	//return std::equal(output.begin(), output.end(), resultExpectedFromDataSet.begin());
 }
 
 void SetBones(DataSet* dataset, int sizeBones)
