@@ -35,7 +35,7 @@ extern "C"
 	DLL_EXPORT void DeleteInstance(void* instance);
 	DLL_EXPORT void ApplyBackProp(Genome* gen, NeuralNetwork* network);
 	DLL_EXPORT void SaveGenome(Genome* gen);
-	DLL_EXPORT bool Evaluate(DataSet* dataset, NeuralNetwork* network, float* inputRaw, int inputLength);
+	DLL_EXPORT int Evaluate(DataSet* dataset, NeuralNetwork* network);
 	DLL_EXPORT Genome* CreateGenome(int input, int output, int layer, int node);
 	DLL_EXPORT NeuralNetwork* CreateNeuralNetwork(Genome* gen);
 	DLL_EXPORT void Train(DataSet* dataset, NeuralNetwork* network, int epoch, float lr);
@@ -55,7 +55,7 @@ void SetNewVertex(DataSet* dataset, float* position, int length, bool* linkedBon
 
 	for (int i = 0; i < lPosition.size(); i++)
 	{
-		newPair.second.push_back(lLinkedBones[i] ? 1.0f : 0.0f);
+		newPair.second.push_back(lLinkedBones[i] ? 1.0f : -1.0f);
 	}
 
 	dataset->vertices.push_back(newPair);
@@ -71,35 +71,48 @@ void Train(DataSet* dataset, NeuralNetwork* network, int epoch, float lr)
 	}
 }
 
-bool Evaluate(DataSet* dataset, NeuralNetwork* network, float* inputRaw, int inputLength)
+int Evaluate(DataSet* dataset, NeuralNetwork* network)
 {
-	std::vector<float> input = wrapperArrayToVector<float>(inputRaw, inputLength);
-	std::vector<float> output = std::vector<float>(dataset->bones);
-	std::vector<float> resultExpectedFromDataSet;
+	std::vector<float> output;
 
-	network->compute(input, output);
+	unsigned int result = 0;
 
-	//for (const auto vertexData : dataset->vertices)
-	//{
-	//	//if (std::equal(input.begin(), input.end(), vertexData.first.begin()))
-	//	//{
-	//	//	return true;
-	//	//	resultExpectedFromDataSet = vertexData.second;
-	//	//	break;
-	//	//}
-	//}
+	int index = 0;
 
-	return false;
+	for (int i = 0; i < dataset->vertices.size(); i++)
+	{
+		bool correct = true;
 
-	//for (int i = 0; i < output.size(); i++)
-	//{
-	//	if (output[i] < 0)
-	//		output[i] = 0;
-	//	else
-	//		output[i] = 1;
-	//}
+		if (i == 0)
+		{
+			network->compute(dataset->vertices[index].first, output);
 
-	//return std::equal(output.begin(), output.end(), resultExpectedFromDataSet.begin());
+			for (int cpt = 0; cpt < output.size(); cpt++)
+			{
+				if (dataset->vertices[index].second[cpt] == 1.f)
+				{
+					if (output[cpt] <= 0)
+					{
+						correct = false;
+					}
+				}
+				else {
+					if (output[cpt] > 0)
+					{
+						correct = false;
+					}
+				}
+			}
+		}
+
+		if (correct == true)
+		{
+			result += 1;
+		}
+	}
+
+	return result;
+
 }
 
 void SetBones(DataSet* dataset, int sizeBones)

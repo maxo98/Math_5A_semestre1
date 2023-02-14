@@ -10,11 +10,11 @@ using Vector3 = UnityEngine.Vector3;
 
 public class Segmentation : MonoBehaviour
 {
-    public SkinnedMeshRenderer skinMesh;
+    public List<SkinnedMeshRenderer> skinMesh;
     Mesh mesh;
-    public MeshFilter meshFilter;
+    public List<MeshFilter> meshFilter;
     public GameObject point;
-    public Transform meshTransform;
+    public List<Transform> meshTransform;
 
     private IntPtr _dataSetInstance;
     private IntPtr _genomeInstance;
@@ -26,107 +26,103 @@ public class Segmentation : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _bones = new List<Tuple<Vector3, List<bool>>>();
-        
-        List<List<int>> bonesVertices = new List<List<int>>();
-        
-        for(int i = 0; i < skinMesh.bones.Length; i++)
+        _dataSetInstance = InitDataSet(skinMesh[0].bones.Length);
+
+        for(int meshIndex = 0; meshIndex < skinMesh.Count; meshIndex++)
         {
-            bonesVertices.Add(new List<int>());
-        }
-
-        Mesh tmp = new Mesh();
-        skinMesh.BakeMesh(tmp, true);
-        mesh = skinMesh.sharedMesh;
-        // Vector3[] vert = tmp.vertices;
-
-        Vector3[] vert = meshFilter.mesh.vertices;
-        
-        // Get the number of bone weights per vertex
-        NativeArray<byte> bonesPerVertex = mesh.GetBonesPerVertex();
-        if (bonesPerVertex.Length == 0)
-        {
-            return;
-        }
-
-        // Get all the bone weights, in vertex index order
-        NativeArray<BoneWeight1> boneWeights = mesh.GetAllBoneWeights();
-
-        // Keep track of where we are in the array of BoneWeights, as we iterate over the vertices
-        int boneWeightIndex = 0;
-
-        // Iterate over the vertices
-        for (int vertIndex = 0; vertIndex < mesh.vertexCount; vertIndex++)
-        {
-            var newList = new List<bool>(skinMesh.bones.Length);
-
-            for (int i = 0; i < skinMesh.bones.Length; i++)
+            _bones = new List<Tuple<Vector3, List<bool>>>();
+            
+            List<List<int>> bonesVertices = new List<List<int>>();
+            
+            for(int i = 0; i < skinMesh[meshIndex].bones.Length; i++)
             {
-                newList.Add(false);
+                bonesVertices.Add(new List<int>());
             }
 
-            int numberOfBonesForThisVertex = bonesPerVertex[vertIndex];
+            Mesh tmp = new Mesh();
+            skinMesh[meshIndex].BakeMesh(tmp, true);
+            mesh = skinMesh[meshIndex].sharedMesh;
+            // Vector3[] vert = tmp.vertices;
 
-            // For each vertex, iterate over its BoneWeights
-            for (int i = 0; i < numberOfBonesForThisVertex; i++)
+            Vector3[] vert = meshFilter[meshIndex].mesh.vertices;
+            
+            // Get the number of bone weights per vertex
+            NativeArray<byte> bonesPerVertex = mesh.GetBonesPerVertex();
+
+            if (bonesPerVertex.Length == 0)
             {
-                int index = boneWeights[boneWeightIndex].boneIndex;
-                newList[index] = true;
-                
-                if(boneWeights[boneWeightIndex].weight > 0.05)
+                return;
+            }
+
+            // Get all the bone weights, in vertex index order
+            NativeArray<BoneWeight1> boneWeights = mesh.GetAllBoneWeights();
+
+            // Keep track of where we are in the array of BoneWeights, as we iterate over the vertices
+            int boneWeightIndex = 0;
+
+            // Iterate over the vertices
+            for (int vertIndex = 0; vertIndex < mesh.vertexCount; vertIndex++)
+            {
+                var newList = new List<bool>(skinMesh[meshIndex].bones.Length);
+
+                for (int i = 0; i < skinMesh[meshIndex].bones.Length; i++)
                 {
-                    bonesVertices[index].Add(vertIndex);
+                    newList.Add(false);
                 }
 
-                boneWeightIndex++;
+                int numberOfBonesForThisVertex = bonesPerVertex[vertIndex];
+
+                // For each vertex, iterate over its BoneWeights
+                for (int i = 0; i < numberOfBonesForThisVertex; i++)
+                {
+                    int index = boneWeights[boneWeightIndex].boneIndex;
+                    newList[index] = true;
+                    
+                    if(boneWeights[boneWeightIndex].weight > 0.05)
+                    {
+                        bonesVertices[index].Add(vertIndex);
+                    }
+
+                    boneWeightIndex++;
+                }
+                
+                var newTuple = Tuple.Create(mesh.vertices[vertIndex], newList);
+                _bones.Add(newTuple);
             }
-            
-            var newTuple = Tuple.Create(mesh.vertices[vertIndex], newList);
-            _bones.Add(newTuple);
-        }
 
-        for(int cpt = 0; cpt < bonesVertices[0].Count; cpt++)
-        {
-            GameObject obj = Instantiate(point, meshTransform.TransformPoint(vert[bonesVertices[0][cpt]]), Quaternion.identity);
-            obj.transform.localScale = new Vector3(20f, 20f, 20f);
-        }
-
-        _dataSetInstance = InitDataSet(skinMesh.bones.Length);
-        
-        for (int idx = 0; idx < _bones.Count; idx++)
-        {
-            var pair = _bones[idx];
-            float[] positionConvertedToArray = new float[3];
-
-            for (int i = 0; i < 3; i++)
+            for (int idx = 0; idx < _bones.Count; idx++)
             {
-                positionConvertedToArray[i] = pair.Item1[i];
+                /*for (int i = 0; i < 3; i++)
+                {
+                    GameObject obj = Instantiate(point, meshTransform[meshIndex].TransformPoint(vert[0][bonesVertices[cpt]]), Quaternion.identity);
+                    obj.transform.localScale = new Vector3(20f, 20f, 20f);
+                }*/
+
+                    var pair = _bones[idx];
+                    float[] positionConvertedToArray = new float[3];
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        positionConvertedToArray[i] = pair.Item1[i];
+                    }
+
+                    SetNewVertex(_dataSetInstance, positionConvertedToArray, 3, pair.Item2.ToArray(), pair.Item2.Count);
             }
 
-            SetNewVertex(_dataSetInstance, positionConvertedToArray, 3, pair.Item2.ToArray(), pair.Item2.Count);
         }
 
-        _genomeInstance = CreateGenome(4, skinMesh.bones.Length, 2, 8);
+        Debug.Log(skinMesh.Count);
+
+        _genomeInstance = CreateGenome(4, skinMesh[0].bones.Length, 2, 8);
         _networkInstance = CreateNeuralNetwork(_genomeInstance);
 
-        Train(_dataSetInstance, _networkInstance, 100, 0.1f);
+        Train(_dataSetInstance, _networkInstance, 10, 0.1f);
 
         ApplyBackProp(_genomeInstance, _networkInstance);
 
         SaveGenome(_genomeInstance);
-
-        var pairBis = _bones[0];
-        float[] convertToArray = new float[3];
-
-        for (int i = 0; i < 3; i++)
-        {
-            convertToArray[i] = pairBis.Item1[i];
-        }
         
-        if (Evaluate(_genomeInstance, _networkInstance, convertToArray, 3))
-            Debug.Log("compute was a success");
-        else
-            Debug.Log("compute was a failed");
+        Debug.Log("Eval " + Evaluate(_genomeInstance, _networkInstance));
     }
 
     // Update is called once per frame
@@ -135,7 +131,7 @@ public class Segmentation : MonoBehaviour
         
     }
 
-    private void OnDestroy()
+    void OnDestroy()
     {
         DeleteInstance(_dataSetInstance);
     }
@@ -168,5 +164,5 @@ public class Segmentation : MonoBehaviour
     static extern void ApplyBackProp(IntPtr gen, IntPtr network);
 
     [DllImport("machine learning algo")]
-    static extern bool Evaluate(IntPtr dataset, IntPtr network, float[] inputRaw, int inputLength);
+    static extern int Evaluate(IntPtr dataset, IntPtr network);
 }
