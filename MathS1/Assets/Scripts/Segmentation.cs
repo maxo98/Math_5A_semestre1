@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Collections;
 using System;
+using System.Runtime.InteropServices;
 
 public class Segmentation : MonoBehaviour
 {
@@ -12,11 +13,15 @@ public class Segmentation : MonoBehaviour
     public GameObject point;
     public Transform meshTransform;
 
+    private IntPtr _hyperneatInstance;
+    private IntPtr _hyperneatParamsInstance;
+    private IntPtr _neatParamsInstance;
     
-
     // Start is called before the first frame update
     void Start()
     {
+        Debug.Log("started");
+        
         List<List<int>> bonesVertices = new List<List<int>>();
         
         for(int i = 0; i < skinMesh.bones.Length; i++)
@@ -70,6 +75,11 @@ public class Segmentation : MonoBehaviour
             GameObject obj = Instantiate(point, meshTransform.TransformPoint(vert[bonesVertices[0][cpt]]), Quaternion.identity);
             obj.transform.localScale = new Vector3(20f, 20f, 20f);
         }
+        
+        _neatParamsInstance = CreateNeatParamInstance();
+        _hyperneatParamsInstance = CreateHyperNeatParamInstance();
+        _hyperneatInstance =
+            CreateHyperNeatInstance(bonesVertices.Count, _neatParamsInstance, _hyperneatParamsInstance);
     }
 
     // Update is called once per frame
@@ -77,4 +87,26 @@ public class Segmentation : MonoBehaviour
     {
         
     }
+
+    private void OnDestroy()
+    {
+        DeleteInstance(_hyperneatInstance);
+        DeleteInstance(_hyperneatParamsInstance);
+        DeleteInstance(_neatParamsInstance);
+    }
+
+    [DllImport("machine learning algo")]
+    static extern void ApplyBackProp(IntPtr hyperneatInstance);
+    
+    [DllImport("machine learning algo")]
+    static extern void DeleteInstance(IntPtr instance);
+    
+    [DllImport("machine learning algo")]
+    static extern IntPtr CreateHyperNeatInstance(int popSize, IntPtr instanceNeatParams, IntPtr instanceHyperneatParams);
+    
+    [DllImport("machine learning algo")]
+    static extern IntPtr CreateNeatParamInstance();
+    
+    [DllImport("machine learning algo")]
+    static extern IntPtr CreateHyperNeatParamInstance();
 }
