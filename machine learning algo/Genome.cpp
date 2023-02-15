@@ -515,11 +515,11 @@ void Genome::saveCurrentGenome(const std::string& fileName)
     file.close();
 }
 
-Genome Genome::loadGenome(const std::string& fileName)
+Genome* Genome::loadGenome(const std::string& fileName)
 {
     std::list<DataToSaveStruct> loadBuffer;
     std::fstream file;
-    Genome loadedGenome = Genome();
+    Genome *loadedGenome = new Genome();
 
     file.open(fileName, std::fstream::in);
 
@@ -550,11 +550,11 @@ Genome Genome::loadGenome(const std::string& fileName)
 
         if (std::stoi(stringSplited[0]) == (int)DataToSaveEnum::GENECONNECTION)
         {
-            loadedGenome.connections.insert(std::make_pair(std::stoi(stringSplited[stringSplited.size() - 2]), loadedGenome.loadGeneConnection(stringSplited)));
+            loadedGenome->connections.insert(std::make_pair(std::stoi(stringSplited[stringSplited.size() - 2]), loadedGenome->loadGeneConnection(stringSplited)));
         }
         else
         {
-            loadedGenome.nodes.push_back(loadedGenome.loadGeneNode(stringSplited));
+            loadedGenome->nodes.push_back(loadedGenome->loadGeneNode(stringSplited));
         }
     }
 

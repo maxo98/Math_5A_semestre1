@@ -44,6 +44,7 @@ extern "C"
 	DLL_EXPORT Genome* CreateGenome(int input, int output, int layer, int node);
 	DLL_EXPORT NeuralNetwork* CreateNeuralNetwork(Genome* gen);
 	DLL_EXPORT bool Train(DataSet* dataset, NeuralNetwork* network, int epoch, float lr);
+	DLL_EXPORT Genome* LoadGenome();
 }
 
 float* GetVertice(DataSet* dataset, int idx)
@@ -112,15 +113,23 @@ void SetNewVertex(DataSet* dataset, float* position, int length, int* linkedBone
 
 bool Train(DataSet* dataset, NeuralNetwork* network, int epoch, float lr)
 {
+	Activation* sig = new SigmoidActivation();
+
 	for (int i = 0; i < epoch; i++)
 	{
 		int index = randInt(0, dataset->vertices.size() - 1);
 
+		lr = 0.05 * sig->activate(0.5f - (i / epoch) * 4);
+
 		if (network->backprop(dataset->vertices[index].first, dataset->vertices[index].second, lr) == false)
 		{
+			delete sig;
+
 			return false;
 		}
 	}
+
+	delete sig;
 
 	return true;
 }
@@ -165,6 +174,11 @@ Genome* CreateGenome(int input, int output, int layer, int node)
 	gen->fullyConnect(layer, node, tanh, tanh, allConn, xavierUniformInit, time(NULL));
 
 	return gen;
+}
+
+Genome* LoadGenome()
+{
+	return Genome::loadGenome();
 }
 
 int GetOutputFromGenome(Genome* genome)
