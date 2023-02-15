@@ -20,10 +20,11 @@ public class Segmentation : MonoBehaviour
     private IntPtr _genomeInstance;
     private IntPtr _networkInstance;
 
-    
     private List<Tuple<Vector3, List<bool>>> _bones;
 
     // Start is called before the first frame update
+
+    // Update is called once per frame
     void Start()
     {
         _dataSetInstance = InitDataSet(skinMesh[0].bones.Length);
@@ -76,101 +77,63 @@ public class Segmentation : MonoBehaviour
                 for (int i = 0; i < numberOfBonesForThisVertex; i++)
                 {
                     int index = boneWeights[boneWeightIndex].boneIndex;
-                    newList[index] = true;
-                    
+
                     if(boneWeights[boneWeightIndex].weight > 0.05)
                     {
                         bonesVertices[index].Add(vertIndex);
+                        newList[index] = true;
                     }
 
                     boneWeightIndex++;
                 }
                 
                 var newTuple = Tuple.Create(mesh.vertices[vertIndex], newList);
+
                 _bones.Add(newTuple);
             }
 
             for (int idx = 0; idx < _bones.Count; idx++)
             {
                 var pair = _bones[idx];
-                    float[] positionConvertedToArray = new float[3];
+                float[] positionConvertedToArray = new float[3];
 
-                    for (int i = 0; i < 3; i++)
-                    {
-                        positionConvertedToArray[i] = pair.Item1[i];
-                    }
-
-                    SetNewVertex(_dataSetInstance, positionConvertedToArray, 3, pair.Item2.ToArray(), pair.Item2.Count);
+                for (int i = 0; i < 3; i++)
+                {
+                    positionConvertedToArray[i] = pair.Item1[i];
+                }
+                
+                SetNewVertex(_dataSetInstance, positionConvertedToArray, 3, pair.Item2.ToArray(), pair.Item2.Count);
             }
 
         }
 
-        _genomeInstance = CreateGenome(4, skinMesh[0].bones.Length, 2, 8);
+        _genomeInstance = CreateGenome(4, skinMesh[0].bones.Length, 1, 15);
         _networkInstance = CreateNeuralNetwork(_genomeInstance);
-
-        Train(_dataSetInstance, _networkInstance, 10, 0.1f);
+        var debugLog = Train(_dataSetInstance, _networkInstance, 10000000, 0.2f);
+        Debug.Log(debugLog);
 
         ApplyBackProp(_genomeInstance, _networkInstance);
-
-        SaveGenome(_genomeInstance);
-
-        int result = 0;
-
-        float[] input = new float[4];
-        float[] inputBones = new float[skinMesh[0].bones.Length];
-        float[] output = new float[skinMesh[0].bones.Length];
-
-        input[3] = 0.5f;
         
-        // crash avec la taille exact du tableau des vertices
+        int result = 0;
+        
         for (int idx = 0; idx < _bones.Count; idx++)
         {
-            // IntPtr inputPtr = GetVertice(_dataSetInstance, idx);
-            
-            // input[3] = 0;
-            // Marshal.Copy(inputPtr, input, 0, 3);
+            bool correct = SetCompute(_dataSetInstance, _networkInstance, idx);
 
-            // IntPtr inputBonesPtr = GetVerticesBones(_dataSetInstance, idx);
-            
-            // Marshal.Copy(inputBonesPtr, inputBones, 0, skinMesh[0].bones.Length);
-            
-            //IntPtr outputPtr = SetCompute(_networkInstance, input, 4);
-            
-            //Marshal.Copy(outputPtr, output, 0, skinMesh[0].bones.Length);
-            
-            bool correct = true;
-            
-            for (int cpt = 0; cpt < output.Length; cpt++)
-            {
-                if (Math.Abs(inputBones[cpt] - 1f) < float.Epsilon)
-                {
-                    if (output[cpt] <= 0)
-                    {
-                        correct = false;
-                    }
-                }
-                else {
-                    if (output[cpt] > 0)
-                    {
-                        correct = false;
-                    }
-                }
-            }
-            
-            if (correct == true)
+            if (correct)
             {
                 result += 1;
             }
-            
-            //DeleteInstance(outputPtr);
         }
         
+        SaveGenome(_genomeInstance);
+
+        float[] data = new float[31];
+
+        Debug.Log("bones " + _bones.Count);
         Debug.Log("result : " + result);
-        
-        Debug.Log("it's ok right now");
     }
 
-    // Update is called once per frame
     void Update()
     {
         
@@ -179,6 +142,8 @@ public class Segmentation : MonoBehaviour
     void OnDestroy()
     {
         DeleteInstance(_dataSetInstance);
+        DeleteInstance(_genomeInstance);
+        DeleteInstance(_networkInstance);
     }
 
     [DllImport("machine learning algo")]
@@ -194,7 +159,7 @@ public class Segmentation : MonoBehaviour
     static extern void DeleteArrayInstance(IntPtr arrayInstance);
 
     [DllImport("machine learning algo")]
-    static extern void Train(IntPtr dataset, IntPtr network, int epoch, float lr);
+    static extern bool Train(IntPtr dataset, IntPtr network, int epoch, float lr);
 
     [DllImport("machine learning algo")]
     static extern IntPtr CreateNeuralNetwork(IntPtr gen);
@@ -209,14 +174,11 @@ public class Segmentation : MonoBehaviour
     static extern void ApplyBackProp(IntPtr gen, IntPtr network);
 
     [DllImport("machine learning algo")]
-    static extern int Evaluate(IntPtr dataset, IntPtr network);
+    static extern bool SetCompute(IntPtr dataset, IntPtr network, int idx);
 
     [DllImport("machine learning algo")]
-    static extern IntPtr SetCompute(IntPtr network, float[] inputData, int inputLength);
+    static extern int GetOutputFromGenome(IntPtr genome);
 
     [DllImport("machine learning algo")]
-    static extern IntPtr GetVerticesBones(IntPtr dataset, int idx);
-    
-    [DllImport("machine learning algo")]
-    static extern IntPtr GetVertice(IntPtr dataset, int idx);
+    static extern IntPtr GetLinkedBones(IntPtr dataset, int idx);
 }

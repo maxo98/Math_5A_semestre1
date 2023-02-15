@@ -61,6 +61,8 @@ public:
 	inline void decrementSuperChampOffspring() { superChampOffspring--; };
 	inline void setEliminate(bool value) { eliminate = value; };
 	inline bool getEliminate() { return eliminate; };
+	inline int getOutput() { return output; };
+	inline int getInput() { return input; };
 	void saveCurrentGenome(const std::string& fileName = "saveGenome.txt");
 	void addHiddenNode(Activation* activation, unsigned int layer);
 	static Genome loadGenome(const std::string& fileName = "saveGenome.txt");

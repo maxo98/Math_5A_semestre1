@@ -8,16 +8,17 @@ C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\
 C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Activation.h(145,77): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
 C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Activation.h(155,74): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
 C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Utils.h(20,52): warning C4244: 'return' : conversion de 'double' en 'float', perte possible de données
-C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Genome.h(167,39): warning C4244: 'argument' : conversion de 'const __int64' en 'unsigned int', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Genome.h(169,39): warning C4244: 'argument' : conversion de 'const __int64' en 'unsigned int', perte possible de données
 C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\NeuralNetwork.h(23,37): warning C4267: 'return' : conversion de 'size_t' en 'unsigned int', perte possible de données
 C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\NeuralNetwork.h(25,38): warning C4267: 'return' : conversion de 'size_t' en 'unsigned int', perte possible de données
 C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\NeuralNetwork.h(26,39): warning C4267: 'return' : conversion de 'size_t' en 'unsigned int', perte possible de données
 C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\Neat.h(90,33): warning C4267: 'return' : conversion de 'size_t' en 'int', perte possible de données
-C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\dllmain.cpp(90,54): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\dllmain.cpp(117,54): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\dllmain.cpp(154,8): warning C4244: 'argument' : conversion de 'time_t' en 'unsigned int', perte possible de données
      Création de la bibliothèque C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\x64\Release\machine learning algo.lib et de l'objet C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\x64\Release\machine learning algo.exp
   Génération de code en cours
-  1 of 1762 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+  1 of 1691 functions (<0.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    3 functions had inline decision re-evaluated but remain unchanged
+    0 functions had inline decision re-evaluated but remain unchanged
   Fin de la génération du code
   machine learning algo.vcxproj -> C:\projets\scolaire\53DJV\maths\projets\Math_5A_semestre1\machine learning algo\x64\Release\machine learning algo.dll
