@@ -61,6 +61,44 @@ public class Segmentation : MonoBehaviour
             // Keep track of where we are in the array of BoneWeights, as we iterate over the vertices
             int boneWeightIndex = 0;
 
+            Vector3 min = mesh.vertices[0];
+            Vector3 max = mesh.vertices[0];
+
+
+            for (int vertIndex = 1; vertIndex < mesh.vertexCount; vertIndex++)
+            {
+                if(min.x > mesh.vertices[vertIndex].x)
+                {
+                    min.x = mesh.vertices[vertIndex].x;
+                }
+
+                if(max.x < mesh.vertices[vertIndex].x)
+                {
+                    max.x = mesh.vertices[vertIndex].x;
+                }
+
+                if(min.y > mesh.vertices[vertIndex].y)
+                {
+                    min.y = mesh.vertices[vertIndex].y;
+                }
+
+                if(max.y < mesh.vertices[vertIndex].y)
+                {
+                    max.y = mesh.vertices[vertIndex].y;
+                }
+
+                if(min.z > mesh.vertices[vertIndex].z)
+                {
+                    min.z = mesh.vertices[vertIndex].z;
+                }
+
+                if(max.z < mesh.vertices[vertIndex].z)
+                {
+                    max.z = mesh.vertices[vertIndex].z;
+                }
+            }
+
+
             // Iterate over the vertices
             for (int vertIndex = 0; vertIndex < mesh.vertexCount; vertIndex++)
             {
@@ -86,8 +124,14 @@ public class Segmentation : MonoBehaviour
 
                     boneWeightIndex++;
                 }
+
+                Vector3 vec = mesh.vertices[vertIndex];
+
+                vec.x = -1 + (vec.x - min.x) * 2 / (max.x - min.x);
+                vec.y = -1 + (vec.y - min.y) * 2 / (max.y - min.y);
+                vec.y = -1 + (vec.z - min.z) * 2 / (max.z - min.z);
                 
-                var newTuple = Tuple.Create(mesh.vertices[vertIndex], newList);
+                var newTuple = Tuple.Create(vec, newList);
 
                 _bones.Add(newTuple);
             }
@@ -107,9 +151,9 @@ public class Segmentation : MonoBehaviour
 
         }
 
-        _genomeInstance = CreateGenome(4, skinMesh[0].bones.Length, 1, 15);
+        _genomeInstance = CreateGenome(4, skinMesh[0].bones.Length, 1, 20);
         _networkInstance = CreateNeuralNetwork(_genomeInstance);
-        var debugLog = Train(_dataSetInstance, _networkInstance, 10000000, 0.2f);
+        var debugLog = Train(_dataSetInstance, _networkInstance, 50000000, 0.2f);
         Debug.Log(debugLog);
 
         ApplyBackProp(_genomeInstance, _networkInstance);
