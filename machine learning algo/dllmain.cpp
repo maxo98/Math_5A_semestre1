@@ -35,10 +35,32 @@ extern "C"
 	DLL_EXPORT void DeleteInstance(void* instance);
 	DLL_EXPORT void ApplyBackProp(Genome* gen, NeuralNetwork* network);
 	DLL_EXPORT void SaveGenome(Genome* gen);
-	DLL_EXPORT int Evaluate(DataSet* dataset, NeuralNetwork* network);
+	DLL_EXPORT float* SetCompute(NeuralNetwork* network, float* inputData, int inputLength);
+	DLL_EXPORT float* GetVerticesBones(DataSet* dataset, int idx);
+	DLL_EXPORT float* GetVertice(DataSet* dataset, int idx);
 	DLL_EXPORT Genome* CreateGenome(int input, int output, int layer, int node);
 	DLL_EXPORT NeuralNetwork* CreateNeuralNetwork(Genome* gen);
 	DLL_EXPORT void Train(DataSet* dataset, NeuralNetwork* network, int epoch, float lr);
+}
+
+float* GetVertice(DataSet* dataset, int idx)
+{
+	return dataset->vertices[idx].first.data();
+}
+
+float* GetVerticesBones(DataSet* dataset, int idx)
+{
+	return dataset->vertices[idx].second.data();
+}
+
+float* SetCompute(NeuralNetwork* network, float* inputData, int inputLength)
+{
+	std::vector<float> output;
+	std::vector<float> input = wrapperArrayToVector<float>(inputData, inputLength);
+	network->compute(input, output);
+	float* dataReturned = new float[output.size()];
+	memcpy(dataReturned, &output[0], output.size());
+	return dataReturned;
 }
 
 void SetNewVertex(DataSet* dataset, float* position, int length, bool* linkedBones, int lengthLink)
@@ -69,50 +91,6 @@ void Train(DataSet* dataset, NeuralNetwork* network, int epoch, float lr)
 
 		network->backprop(dataset->vertices[index].first, dataset->vertices[index].second, lr);
 	}
-}
-
-int Evaluate(DataSet* dataset, NeuralNetwork* network)
-{
-	std::vector<float> output;
-
-	unsigned int result = 0;
-
-	int index = 0;
-
-	for (int i = 0; i < dataset->vertices.size(); i++)
-	{
-		bool correct = true;
-
-		if (i == 0)
-		{
-			network->compute(dataset->vertices[index].first, output);
-
-			for (int cpt = 0; cpt < output.size(); cpt++)
-			{
-				if (dataset->vertices[index].second[cpt] == 1.f)
-				{
-					if (output[cpt] <= 0)
-					{
-						correct = false;
-					}
-				}
-				else {
-					if (output[cpt] > 0)
-					{
-						correct = false;
-					}
-				}
-			}
-		}
-
-		if (correct == true)
-		{
-			result += 1;
-		}
-	}
-
-	return result;
-
 }
 
 void SetBones(DataSet* dataset, int sizeBones)

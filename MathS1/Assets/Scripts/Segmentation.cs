@@ -92,13 +92,7 @@ public class Segmentation : MonoBehaviour
 
             for (int idx = 0; idx < _bones.Count; idx++)
             {
-                /*for (int i = 0; i < 3; i++)
-                {
-                    GameObject obj = Instantiate(point, meshTransform[meshIndex].TransformPoint(vert[0][bonesVertices[cpt]]), Quaternion.identity);
-                    obj.transform.localScale = new Vector3(20f, 20f, 20f);
-                }*/
-
-                    var pair = _bones[idx];
+                var pair = _bones[idx];
                     float[] positionConvertedToArray = new float[3];
 
                     for (int i = 0; i < 3; i++)
@@ -111,8 +105,6 @@ public class Segmentation : MonoBehaviour
 
         }
 
-        Debug.Log(skinMesh.Count);
-
         _genomeInstance = CreateGenome(4, skinMesh[0].bones.Length, 2, 8);
         _networkInstance = CreateNeuralNetwork(_genomeInstance);
 
@@ -121,8 +113,57 @@ public class Segmentation : MonoBehaviour
         ApplyBackProp(_genomeInstance, _networkInstance);
 
         SaveGenome(_genomeInstance);
+
+        int result = 0;
         
-        Debug.Log("Eval " + Evaluate(_genomeInstance, _networkInstance));
+        // crash avec la taille exact du tableau des vertices
+        for (int idx = 0; idx < 10; idx++)
+        {
+            IntPtr inputPtr = GetVertice(_dataSetInstance, idx);
+            float[] input = new float[4];
+            input[3] = 0;
+            Marshal.Copy(inputPtr, input, 0, 3);
+
+            IntPtr inputBonesPtr = GetVerticesBones(_dataSetInstance, idx);
+            float[] inputBones = new float[skinMesh[0].bones.Length];
+            Marshal.Copy(inputBonesPtr, inputBones, 0, skinMesh[0].bones.Length);
+            
+            IntPtr outputPtr = SetCompute(_networkInstance, input, 4);
+            float[] output = new float[skinMesh[0].bones.Length];
+            Marshal.Copy(outputPtr, output, 0, skinMesh[0].bones.Length);
+            
+            bool correct = true;
+            
+            for (int cpt = 0; cpt < output.Length; cpt++)
+            {
+                if (Math.Abs(inputBones[cpt] - 1f) < float.Epsilon)
+                {
+                    if (output[cpt] <= 0)
+                    {
+                        correct = false;
+                    }
+                }
+                else {
+                    if (output[cpt] > 0)
+                    {
+                        correct = false;
+                    }
+                }
+            }
+            
+            if (correct == true)
+            {
+                result += 1;
+            }
+            
+            DeleteInstance(inputPtr);
+            DeleteInstance(inputBonesPtr);
+            DeleteInstance(outputPtr);
+        }
+        
+        Debug.Log("result : " + result);
+        
+        Debug.Log("it's ok right now");
     }
 
     // Update is called once per frame
@@ -165,4 +206,13 @@ public class Segmentation : MonoBehaviour
 
     [DllImport("machine learning algo")]
     static extern int Evaluate(IntPtr dataset, IntPtr network);
+
+    [DllImport("machine learning algo")]
+    static extern IntPtr SetCompute(IntPtr network, float[] inputData, int inputLength);
+
+    [DllImport("machine learning algo")]
+    static extern IntPtr GetVerticesBones(IntPtr dataset, int idx);
+    
+    [DllImport("machine learning algo")]
+    static extern IntPtr GetVertice(IntPtr dataset, int idx);
 }
