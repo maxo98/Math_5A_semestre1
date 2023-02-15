@@ -75,6 +75,8 @@ void SetNewVertex(DataSet* dataset, float* position, int length, bool* linkedBon
 		newPair.first.push_back(lPosition[i]);
 	}
 
+	newPair.first.push_back(0.5f);
+
 	for (int i = 0; i < lPosition.size(); i++)
 	{
 		newPair.second.push_back(lLinkedBones[i] ? 1.0f : -1.0f);

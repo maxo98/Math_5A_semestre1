@@ -28,10 +28,10 @@ public class Segmentation : MonoBehaviour
     {
         _dataSetInstance = InitDataSet(skinMesh[0].bones.Length);
 
+        _bones = new List<Tuple<Vector3, List<bool>>>();
+
         for(int meshIndex = 0; meshIndex < skinMesh.Count; meshIndex++)
         {
-            _bones = new List<Tuple<Vector3, List<bool>>>();
-            
             List<List<int>> bonesVertices = new List<List<int>>();
             
             for(int i = 0; i < skinMesh[meshIndex].bones.Length; i++)
@@ -115,22 +115,28 @@ public class Segmentation : MonoBehaviour
         SaveGenome(_genomeInstance);
 
         int result = 0;
+
+        float[] input = new float[4];
+        float[] inputBones = new float[skinMesh[0].bones.Length];
+        float[] output = new float[skinMesh[0].bones.Length];
+
+        input[3] = 0.5f;
         
         // crash avec la taille exact du tableau des vertices
-        for (int idx = 0; idx < 10; idx++)
+        for (int idx = 0; idx < _bones.Count; idx++)
         {
-            IntPtr inputPtr = GetVertice(_dataSetInstance, idx);
-            float[] input = new float[4];
-            input[3] = 0;
-            Marshal.Copy(inputPtr, input, 0, 3);
-
-            IntPtr inputBonesPtr = GetVerticesBones(_dataSetInstance, idx);
-            float[] inputBones = new float[skinMesh[0].bones.Length];
-            Marshal.Copy(inputBonesPtr, inputBones, 0, skinMesh[0].bones.Length);
+            // IntPtr inputPtr = GetVertice(_dataSetInstance, idx);
             
-            IntPtr outputPtr = SetCompute(_networkInstance, input, 4);
-            float[] output = new float[skinMesh[0].bones.Length];
-            Marshal.Copy(outputPtr, output, 0, skinMesh[0].bones.Length);
+            // input[3] = 0;
+            // Marshal.Copy(inputPtr, input, 0, 3);
+
+            // IntPtr inputBonesPtr = GetVerticesBones(_dataSetInstance, idx);
+            
+            // Marshal.Copy(inputBonesPtr, inputBones, 0, skinMesh[0].bones.Length);
+            
+            //IntPtr outputPtr = SetCompute(_networkInstance, input, 4);
+            
+            //Marshal.Copy(outputPtr, output, 0, skinMesh[0].bones.Length);
             
             bool correct = true;
             
@@ -156,9 +162,7 @@ public class Segmentation : MonoBehaviour
                 result += 1;
             }
             
-            DeleteInstance(inputPtr);
-            DeleteInstance(inputBonesPtr);
-            DeleteInstance(outputPtr);
+            //DeleteInstance(outputPtr);
         }
         
         Debug.Log("result : " + result);
