@@ -19,6 +19,8 @@ public class ApplySegmentation : MonoBehaviour
     private List<List<GameObject>> vertices;
     private int boneIdxShow = 0;
     private int nbBones;
+    public Transform meshTransform;
+
     void Start()
     {
         _genomeInstance = LoadGenome();
@@ -76,6 +78,9 @@ public class ApplySegmentation : MonoBehaviour
             input[0] = -1 + (mesh.vertices[vertIndex][0] - min.x) * 2 / (max.x - min.x);
             input[1] = -1 + (mesh.vertices[vertIndex][1] - min.y) * 2 / (max.y - min.y);
             input[2] = -1 + (mesh.vertices[vertIndex][2] - min.z) * 2 / (max.z - min.z);
+            // input[0] = mesh.vertices[vertIndex][0];
+            // input[1] = mesh.vertices[vertIndex][1];
+            // input[2] = mesh.vertices[vertIndex][2];
             input[3] = 0.5f;
             
             IntPtr outputPtr = GetComputeResult(_networkInstance, input, 4, nbBones);
@@ -84,10 +89,12 @@ public class ApplySegmentation : MonoBehaviour
 
             for (int i = 0; i < nbBones; i++)
             {
-                if (output[i] > 0.5)
+                //Debug.Log(output[i]);
+
+                if (output[i] > 0)
                 {
-                    Debug.Log("hello there");
-                    GameObject obj = Instantiate(point, mesh.vertices[vertIndex], Quaternion.identity);
+                    
+                    GameObject obj = Instantiate(point, meshTransform.TransformPoint(mesh.vertices[vertIndex]), Quaternion.identity);
                     obj.SetActive(false);
                     vertices[i].Add(obj);
                 }

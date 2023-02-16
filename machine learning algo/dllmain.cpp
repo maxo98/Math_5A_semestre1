@@ -67,7 +67,7 @@ float* GetComputeResult(NeuralNetwork* network, float* positions, int length, in
 
 	for (int i = 0; i < length; i++)
 	{
-		input[i] = positions[i];
+		input.push_back(positions[i]);
 	}
 
 	network->compute(input, output);
