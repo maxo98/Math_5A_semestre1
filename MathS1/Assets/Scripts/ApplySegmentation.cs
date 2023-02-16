@@ -89,7 +89,7 @@ public class ApplySegmentation : MonoBehaviour
 
             for (int i = 0; i < nbBones; i++)
             {
-                //Debug.Log(output[i]);
+                Debug.Log(output[i]);
 
                 if (output[i] > 0)
                 {
