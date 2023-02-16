@@ -43,7 +43,6 @@ public class Segmentation : MonoBehaviour
             Mesh tmp = new Mesh();
             skinMesh[meshIndex].BakeMesh(tmp, true);
             mesh = skinMesh[meshIndex].sharedMesh;
-            // Vector3[] vert = tmp.vertices;
 
             Vector3[] vert = meshFilter[meshIndex].mesh.vertices;
             
@@ -153,8 +152,7 @@ public class Segmentation : MonoBehaviour
 
         _genomeInstance = CreateGenome(4, skinMesh[0].bones.Length, 1, 20);
         _networkInstance = CreateNeuralNetwork(_genomeInstance);
-        var debugLog = Train(_dataSetInstance, _networkInstance, 50000000, 0.2f);
-        Debug.Log(debugLog);
+        var debugLog = Train(_dataSetInstance, _networkInstance, 50000000, 0.008f);
 
         ApplyBackProp(_genomeInstance, _networkInstance);
         
@@ -198,9 +196,6 @@ public class Segmentation : MonoBehaviour
 
     [DllImport("machine learning algo")]
     static extern void DeleteInstance(IntPtr instance);
- 
-    [DllImport("machine learning algo")]
-    static extern void DeleteArrayInstance(IntPtr arrayInstance);
 
     [DllImport("machine learning algo")]
     static extern bool Train(IntPtr dataset, IntPtr network, int epoch, float lr);
@@ -219,10 +214,4 @@ public class Segmentation : MonoBehaviour
 
     [DllImport("machine learning algo")]
     static extern bool SetCompute(IntPtr dataset, IntPtr network, int idx);
-
-    [DllImport("machine learning algo")]
-    static extern int GetOutputFromGenome(IntPtr genome);
-
-    [DllImport("machine learning algo")]
-    static extern IntPtr GetLinkedBones(IntPtr dataset, int idx);
 }

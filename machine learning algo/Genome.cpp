@@ -519,7 +519,7 @@ Genome* Genome::loadGenome(const std::string& fileName)
 {
     std::list<DataToSaveStruct> loadBuffer;
     std::fstream file;
-    Genome *loadedGenome = new Genome();
+    Genome* loadedGenome = new Genome();
 
     file.open(fileName, std::fstream::in);
 
@@ -530,8 +530,11 @@ Genome* Genome::loadGenome(const std::string& fileName)
         return loadedGenome;
     }
 
+    loadedGenome->input = 0;
+    loadedGenome->output = 0;
+
     std::string line;
-    
+
     while (getline(file, line))
     {
 #ifdef DEBUG
@@ -542,8 +545,8 @@ Genome* Genome::loadGenome(const std::string& fileName)
         int idxStart, idxEnd;
         idxStart = idxEnd = 0;
 
-        while ((idxStart = line.find_first_not_of(' ', idxEnd)) != std::string::npos) 
-        { 
+        while ((idxStart = line.find_first_not_of(' ', idxEnd)) != std::string::npos)
+        {
             idxEnd = line.find(' ', idxStart);
             stringSplited.push_back(line.substr(idxStart, idxEnd - idxStart));
         }
@@ -555,6 +558,15 @@ Genome* Genome::loadGenome(const std::string& fileName)
         else
         {
             loadedGenome->nodes.push_back(loadedGenome->loadGeneNode(stringSplited));
+
+            if (loadedGenome->nodes.back().type == NODE_TYPE::INPUT)
+            {
+                loadedGenome->input++;
+            }
+            else if (loadedGenome->nodes.back().type == NODE_TYPE::OUTPUT)
+            {
+                loadedGenome->output++;
+            }
         }
     }
 

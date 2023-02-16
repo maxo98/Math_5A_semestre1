@@ -44,6 +44,7 @@ extern "C"
 	DLL_EXPORT Genome* CreateGenome(int input, int output, int layer, int node);
 	DLL_EXPORT NeuralNetwork* CreateNeuralNetwork(Genome* gen);
 	DLL_EXPORT bool Train(DataSet* dataset, NeuralNetwork* network, int epoch, float lr);
+	DLL_EXPORT float* GetComputeResult(NeuralNetwork* network, float* positions, int length, int nbBones);
 	DLL_EXPORT Genome* LoadGenome();
 }
 
@@ -55,6 +56,30 @@ float* GetVertice(DataSet* dataset, int idx)
 float* GetVerticesBones(DataSet* dataset, int idx)
 {
 	return dataset->vertices[idx].second.data();
+}
+
+float* GetComputeResult(NeuralNetwork* network, float* positions, int length, int nbBones)
+{
+	std::vector<float> input;
+	std::vector<float> output;
+	input.reserve(length);
+	output.reserve(nbBones);
+
+	for (int i = 0; i < length; i++)
+	{
+		input[i] = positions[i];
+	}
+
+	network->compute(input, output);
+
+	float* outputReturned = new float[nbBones];
+
+	for (int i = 0; i < nbBones; i++)
+	{
+		outputReturned[i] = output[i];
+	}
+
+	return outputReturned;
 }
 
 bool SetCompute(DataSet* dataset, NeuralNetwork* network, int idx)
